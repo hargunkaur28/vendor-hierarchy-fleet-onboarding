@@ -56,7 +56,16 @@ export const TreeNodeCard: React.FC<TreeNodeCardProps> = ({
       role="treeitem"
       aria-selected={isSelected}
       aria-label={`${vendor.name}, ${roleConfig?.label ?? vendor.role}`}
-      onClick={onSelect}
+      onMouseDown={(e) => {
+        if (e.target instanceof HTMLElement && e.target.closest('button')) {
+          return;
+        }
+        e.currentTarget.focus();
+      }}
+      onClick={(e) => {
+        e.currentTarget.focus();
+        onSelect?.();
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();

@@ -140,6 +140,100 @@ describe('Phase 3: Hierarchy Tree & App Shell Components', () => {
       fireEvent.keyDown(adminNode!, { key: 'ArrowRight', code: 'ArrowRight' });
       expect(useAppStore.getState().expandedIds.has('admin')).toBe(true);
     });
+
+    it('sets DOM focus on the card div when clicked and allows arrow navigation', async () => {
+      render(
+        <MemoryRouter>
+          <HierarchyTree />
+        </MemoryRouter>,
+      );
+
+      const adminNode = document.getElementById('node-admin')!;
+      expect(adminNode).toBeInTheDocument();
+
+      // Ensure activeElement is initially not the admin node
+      (document.activeElement as HTMLElement)?.blur?.();
+
+      // Clicking the card must focus the card div itself
+      fireEvent.mouseDown(adminNode);
+      fireEvent.click(adminNode);
+
+      expect(document.activeElement).toBe(adminNode);
+      expect(useAppStore.getState().selectedVendorId).toBe('admin');
+
+      // Now pressing ArrowDown directly on activeElement works without manual .focus()
+      fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown', code: 'ArrowDown' });
+
+      const children = useAppStore.getState().childrenIndex['admin'] || [];
+      const firstChildId = children[0]!;
+      const firstChildEl = document.getElementById(`node-${firstChildId}`);
+
+      expect(document.activeElement).toBe(firstChildEl);
+      expect(useAppStore.getState().selectedVendorId).toBe(firstChildId);
+    });
+
+    it('navigates across siblings with ArrowRight and ArrowLeft', async () => {
+      render(
+        <MemoryRouter>
+          <HierarchyTree />
+        </MemoryRouter>,
+      );
+
+      const children = useAppStore.getState().childrenIndex['admin'] || [];
+      expect(children.length).toBeGreaterThanOrEqual(2);
+
+      const firstSiblingId = children[0]!;
+      const secondSiblingId = children[1]!;
+
+      const firstSiblingEl = document.getElementById(`node-${firstSiblingId}`)!;
+      firstSiblingEl.focus();
+      expect(document.activeElement).toBe(firstSiblingEl);
+
+      // Ensure it is collapsed so ArrowRight moves to next sibling instead of collapsing
+      if (useAppStore.getState().expandedIds.has(firstSiblingId)) {
+        useAppStore.getState().toggleExpanded(firstSiblingId);
+      }
+      expect(useAppStore.getState().expandedIds.has(firstSiblingId)).toBe(false);
+
+      // If it has children and collapsed: first ArrowRight expands it
+      fireEvent.keyDown(firstSiblingEl, { key: 'ArrowRight', code: 'ArrowRight' });
+      expect(useAppStore.getState().expandedIds.has(firstSiblingId)).toBe(true);
+
+      // Next ArrowRight with siblings moves to next sibling
+      fireEvent.keyDown(firstSiblingEl, { key: 'ArrowRight', code: 'ArrowRight' });
+      const secondSiblingEl = document.getElementById(`node-${secondSiblingId}`);
+      expect(document.activeElement).toBe(secondSiblingEl);
+      expect(useAppStore.getState().selectedVendorId).toBe(secondSiblingId);
+
+      // ArrowLeft moves back to previous sibling
+      fireEvent.keyDown(secondSiblingEl!, { key: 'ArrowLeft', code: 'ArrowLeft' });
+      expect(document.activeElement).toBe(firstSiblingEl);
+      expect(useAppStore.getState().selectedVendorId).toBe(firstSiblingId);
+    });
+
+    it('selects vendor when pressing Enter or Space', async () => {
+      render(
+        <MemoryRouter>
+          <HierarchyTree />
+        </MemoryRouter>,
+      );
+
+      const children = useAppStore.getState().childrenIndex['admin'] || [];
+      const targetChildId = children[0]!;
+      const targetEl = document.getElementById(`node-${targetChildId}`)!;
+
+      // Change store selection away from target
+      await act(async () => {
+        useAppStore.getState().setSelectedVendorId('admin');
+      });
+
+      targetEl.focus();
+      await act(async () => {
+        fireEvent.keyDown(targetEl, { key: 'Enter', code: 'Enter' });
+      });
+
+      expect(useAppStore.getState().selectedVendorId).toBe(targetChildId);
+    });
   });
 
   describe('RoleLegend', () => {

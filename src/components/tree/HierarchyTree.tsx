@@ -55,57 +55,102 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
     }
   }, [rootNode?.id]);
 
+  // Keep DOM focus in sync with selectedVendorId when selection changes
+  useEffect(() => {
+    if (selectedVendorId) {
+      const el = document.getElementById(`node-${selectedVendorId}`);
+      if (el && document.activeElement !== el) {
+        const isInputActive =
+          document.activeElement?.tagName === 'INPUT' ||
+          document.activeElement?.tagName === 'TEXTAREA';
+        if (!isInputActive) {
+          el.focus();
+        }
+      }
+    }
+  }, [selectedVendorId]);
+
   // Keyboard navigation handler for tree nodes
   const handleNodeKeyDown = (
     e: React.KeyboardEvent,
     vendorId: string,
     parentId: string | null,
   ) => {
-    const children = (childrenIndex[vendorId] || []).filter(
-      (id) => !hasFilter || visibleIds.has(id),
-    );
+    const rawChildren = childrenIndex[vendorId] || [];
+    const children = rawChildren.filter((id) => !hasFilter || visibleIds.has(id));
+    const hasChildren = children.length > 0;
     const isExpanded = expandedIds.has(vendorId);
+
+    // Siblings under the same parent
+    const siblings = parentId
+      ? (childrenIndex[parentId] || []).filter(
+          (id) => !hasFilter || visibleIds.has(id),
+        )
+      : [];
+    const currentIndex = siblings.indexOf(vendorId);
+    const nextSiblingId =
+      currentIndex >= 0 && currentIndex < siblings.length - 1
+        ? siblings[currentIndex + 1]
+        : null;
+    const prevSiblingId =
+      currentIndex > 0 ? siblings[currentIndex - 1] : null;
+
+    const focusNode = (targetId: string) => {
+      const targetEl = document.getElementById(`node-${targetId}`);
+      if (targetEl) {
+        targetEl.focus();
+        targetEl.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+      setSelectedVendorId(targetId);
+    };
 
     switch (e.key) {
       case 'ArrowDown': {
         e.preventDefault();
-        // Navigate to first child if expanded
-        if (isExpanded && children.length > 0 && children[0]) {
-          const firstChildEl = document.getElementById(`node-${children[0]}`);
-          firstChildEl?.focus();
-          setSelectedVendorId(children[0]);
+        // Down moves to child tier
+        if (hasChildren) {
+          if (!isExpanded) {
+            toggleExpanded(vendorId);
+          }
+          if (children[0]) {
+            focusNode(children[0]);
+          }
         }
         break;
       }
       case 'ArrowUp': {
         e.preventDefault();
-        // Navigate to parent
+        // Up moves to parent tier
         if (parentId) {
-          const parentEl = document.getElementById(`node-${parentId}`);
-          parentEl?.focus();
-          setSelectedVendorId(parentId);
+          focusNode(parentId);
         }
         break;
       }
       case 'ArrowRight': {
         e.preventDefault();
-        if (!isExpanded && children.length > 0) {
+        // If node has children and is collapsed, expand it
+        if (hasChildren && !isExpanded) {
           toggleExpanded(vendorId);
-        } else if (isExpanded && children.length > 0 && children[0]) {
-          const nextChildEl = document.getElementById(`node-${children[0]}`);
-          nextChildEl?.focus();
-          setSelectedVendorId(children[0]);
+        } else if (nextSiblingId) {
+          // Move to next sibling if available
+          focusNode(nextSiblingId);
+        } else if (hasChildren && isExpanded && children[0]) {
+          // If already expanded and no next sibling, move down to first child
+          focusNode(children[0]);
         }
         break;
       }
       case 'ArrowLeft': {
         e.preventDefault();
-        if (isExpanded && children.length > 0) {
+        // If node has children and is expanded, collapse it
+        if (hasChildren && isExpanded) {
           toggleExpanded(vendorId);
+        } else if (prevSiblingId) {
+          // Move to previous sibling if available
+          focusNode(prevSiblingId);
         } else if (parentId) {
-          const parentEl = document.getElementById(`node-${parentId}`);
-          parentEl?.focus();
-          setSelectedVendorId(parentId);
+          // Otherwise move to parent
+          focusNode(parentId);
         }
         break;
       }
