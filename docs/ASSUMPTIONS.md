@@ -76,3 +76,6 @@ If a vendor has children that are incompatible with the proposed new role (`allo
 ### A19: Undo Toast Lifecycle
 The post-move Undo toast uses a 5,000ms duration with Sonner. Clicking "Undo" invokes `moveVendor(vendorId, previousParentId)`, restoring the exact prior state and recording an audit entry. If another move occurs while an Undo toast is active, the active toast is dismissed to prevent out-of-order race conditions.
 
+### A20: Change Role Pre-filtering (Condition a vs Condition b)
+Per Spec F3, candidate roles in the 'Select New Role' dropdown are strictly pre-filtered to roles allowed under the node's current parent (`isRoleAllowedUnder(role, parentVendor.role)`). If the node has existing children that would be incompatible with a candidate role (Condition b, e.g. converting a Sub Vendor with children to a Deployment Associate), the option is present but selecting it triggers the inline `ROLE_CHANGE_CONFLICT` warning banner and blocks submission until the children are moved.
+

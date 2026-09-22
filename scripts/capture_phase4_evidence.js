@@ -11,7 +11,6 @@ async function sleep(ms) {
 }
 
 async function main() {
-  console.log('Launching headless Edge...');
   const edge = spawn(EDGE_PATH, [
     `--remote-debugging-port=${PORT}`,
     '--headless=new',
@@ -44,7 +43,6 @@ async function main() {
     return;
   }
 
-  console.log('Connected to tab:', version.webSocketDebuggerUrl);
   const ws = new WebSocket(version.webSocketDebuggerUrl);
 
   let idCounter = 1;
@@ -76,7 +74,6 @@ async function main() {
   await send('DOM.enable');
   await send('Runtime.enable');
 
-  console.log('Navigating to http://localhost:5173/team ...');
   await send('Page.navigate', { url: 'http://localhost:5173/team' });
   await sleep(3500);
 
@@ -101,136 +98,72 @@ async function main() {
     return outPath;
   }
 
-  // Find Move Profile button on Arunkumar QA or Demo Group Vendor
-  console.log('Looking for Move Profile button...');
-  const moveClick = await evaluate(`(() => {
+  // Click Move Profile specifically on Demo Sub Vendor 1 or Demo Vendor Supervisor
+  const clickResult = await evaluate(`(() => {
     const allButtons = Array.from(document.querySelectorAll('button'));
-    const arunBtn = allButtons.find(b => {
+    const target = allButtons.find(b => {
       if (!b.textContent.includes('Move Profile')) return false;
       const card = b.closest('div[role="treeitem"]') || b.closest('.bg-white') || b.parentElement;
-      return card && card.textContent.includes('Arunkumar QA');
+      return card && (card.textContent.includes('Demo Sub Vendor 1') || card.textContent.includes('Demo Sub Vendor'));
     });
-    if (arunBtn) {
-      arunBtn.scrollIntoView({ block: 'center', inline: 'center' });
-      arunBtn.click();
-      return 'clicked Arunkumar QA Move Profile';
+    if (target) {
+      target.scrollIntoView({ block: 'center', inline: 'center' });
+      target.click();
+      return 'clicked Demo Sub Vendor';
+    }
+    // Fallback: any sub vendor
+    const anySub = allButtons.find(b => {
+      const card = b.closest('div[role="treeitem"]');
+      return b.textContent.includes('Move Profile') && card && card.getAttribute('aria-label')?.includes('Sub Vendor');
+    });
+    if (anySub) {
+      anySub.click();
+      return 'clicked fallback sub vendor';
     }
     return 'none';
   })()`);
-  console.log('Move button click result:', moveClick);
+  console.log('Sub vendor move click:', clickResult);
 
   await sleep(600);
 
-  // Capture Screen 2: Move Profile Modal
-  console.log('Capturing Screen 2: Move Profile Modal...');
-  await takeScreenshot('phase4_screen2_move_modal.png');
-
-  // Open the Combobox INSIDE Dialog specifically
-  console.log('Opening Combobox inside dialog...');
-  const openedCombobox = await evaluate(`(() => {
-    const dialog = document.querySelector('[role="dialog"]');
-    if (!dialog) return 'dialog not found';
-    const trigger = dialog.querySelector('button[aria-haspopup="listbox"]');
-    if (!trigger) return 'combobox trigger inside dialog not found';
-    trigger.click();
-    return 'combobox inside dialog opened';
-  })()`);
-  console.log('Combobox open result:', openedCombobox);
-
-  await sleep(600);
-
-  // Capture Screen 3: Combobox Dropdown
-  console.log('Capturing Screen 3: Combobox Dropdown...');
-  await takeScreenshot('phase4_screen3_combobox_dropdown.png');
-
-  // Select a new parent from combobox options
-  console.log('Selecting new parent in combobox...');
-  const selectedParent = await evaluate(`(() => {
-    const dialog = document.querySelector('[role="dialog"]');
-    if (!dialog) return 'no dialog';
-    const options = Array.from(dialog.querySelectorAll('button[role="option"]'));
-    if (options.length === 0) return 'no options';
-    const opt = options.find(o => o.textContent.includes('DeepakTesting1')) || options[0];
-    const text = opt.textContent;
-    opt.click();
-    return 'selected: ' + text;
-  })()`);
-  console.log('Parent selection result:', selectedParent);
-
-  await sleep(500);
-
-  // Click Move button in dialog
-  console.log('Submitting Move in dialog...');
-  const submitMove = await evaluate(`(() => {
-    const dialog = document.querySelector('[role="dialog"]');
-    if (!dialog) return 'no dialog';
-    const moveBtn = Array.from(dialog.querySelectorAll('button[type="submit"]')).find(b => b.textContent.includes('Move'));
-    if (moveBtn && !moveBtn.disabled) {
-      moveBtn.click();
-      return 'clicked Move submit';
-    }
-    return 'Move button disabled or not found';
-  })()`);
-  console.log('Submit Move result:', submitMove);
-
-  // Wait for mock API roundtrip (approx 800ms) and modal to close
-  await sleep(1500);
-
-  // Capture Toast and Pulse state
-  console.log('Capturing Toast notification and pulse ring...');
-  await takeScreenshot('phase4_toast_and_pulse.png');
-
-  // Click Undo in toast
-  console.log('Testing Undo in toast...');
-  const undoResult = await evaluate(`(() => {
-    const toast = document.querySelector('[data-sonner-toast]');
-    if (!toast) return 'toast element not found';
-    const undoBtn = Array.from(toast.querySelectorAll('button')).find(b => b.textContent.trim() === 'Undo');
-    if (undoBtn) {
-      undoBtn.click();
-      return 'clicked Undo button inside toast';
-    }
-    return 'Undo button not found inside toast';
-  })()`);
-  console.log('Undo result:', undoResult);
-
-  await sleep(1200);
-  await takeScreenshot('phase4_after_undo.png');
-
-  // Open modal again on Demo Group Vendor and test Change Role mode
-  console.log('Testing Change Role mode on Demo Group Vendor...');
+  // Switch to Change Role mode
   await evaluate(`(() => {
-    const allButtons = Array.from(document.querySelectorAll('button'));
-    const demoBtn = allButtons.find(b => {
-      if (!b.textContent.includes('Move Profile')) return false;
-      const card = b.closest('div[role="treeitem"]') || b.closest('.bg-white') || b.parentElement;
-      return card && card.textContent.includes('Demo Group Vendor');
-    });
-    if (demoBtn) demoBtn.click();
-  })()`);
-  await sleep(600);
-
-  const switchedRole = await evaluate(`(() => {
     const dialog = document.querySelector('[role="dialog"]');
-    if (!dialog) return 'no dialog';
+    if (!dialog) return;
     const roleRadio = Array.from(dialog.querySelectorAll('input[type="radio"]')).find(r => r.value === 'role');
-    if (roleRadio) {
-      roleRadio.click();
-      return 'switched to Change Role radio';
-    }
-    return 'role radio not found';
+    if (roleRadio) roleRadio.click();
   })()`);
-  console.log('Change role switch:', switchedRole);
 
   await sleep(500);
-  await takeScreenshot('phase4_change_role_mode.png');
+
+  // Check role options in select
+  const options = await evaluate(`(() => {
+    const select = document.querySelector('#new-role-select');
+    if (!select) return [];
+    return Array.from(select.querySelectorAll('option')).map(o => ({ value: o.value, text: o.textContent }));
+  })()`);
+  console.log('Available options in Select New Role dropdown:', options);
+
+  // Select Deployment Associate
+  await evaluate(`(() => {
+    const select = document.querySelector('#new-role-select');
+    if (select) {
+      select.value = 'DEPLOYMENT_ASSOCIATE';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  })()`);
+
+  await sleep(600);
+
+  // Take screenshot showing pre-filtered role and child conflict banner
+  await takeScreenshot('phase4_change_role_subvendor_fixed.png');
 
   ws.close();
   edge.kill();
-  console.log('Phase 4 evidence script complete!');
+  console.log('Capture script finished!');
 }
 
 main().catch((err) => {
-  console.error('Evidence capture failed:', err);
+  console.error(err);
   process.exit(1);
 });

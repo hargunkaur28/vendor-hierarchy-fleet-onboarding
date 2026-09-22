@@ -75,11 +75,18 @@ const MoveProfileModalContent: React.FC<MoveProfileModalContentProps> = ({
 
   const selectedParent = selectedParentId ? vendorsById[selectedParentId] : null;
 
-  // Change Role (F3): Find candidate roles and check for child conflicts
+  // Change Role (F3): Find candidate roles allowed under node's current parent (condition a)
   const candidateRoles = useMemo(() => {
     if (!vendor) return [];
-    return ROLE_KEYS.filter((r) => r !== 'ADMIN' && r !== vendor.role);
-  }, [vendor]);
+    return ROLE_KEYS.filter((r) => {
+      if (r === 'ADMIN' || r === vendor.role) return false;
+      // Pre-filter: role must be allowed under node's current parent per spec F3 (condition a)
+      if (parentVendor && !isRoleAllowedUnder(r, parentVendor.role)) {
+        return false;
+      }
+      return true;
+    });
+  }, [vendor, parentVendor]);
 
   const existingChildren = useMemo(() => {
     if (!vendor) return [];
@@ -368,16 +375,25 @@ const MoveProfileModalContent: React.FC<MoveProfileModalContentProps> = ({
                   setSelectedRole((e.target.value as RoleKey) || null);
                   setErrorMessage(null);
                 }}
-                disabled={isSubmitting}
-                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                disabled={isSubmitting || candidateRoles.length === 0}
+                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
               >
-                <option value="">-- Choose Role --</option>
+                <option value="">
+                  {candidateRoles.length === 0
+                    ? 'No alternative roles under current parent'
+                    : '-- Choose Role --'}
+                </option>
                 {candidateRoles.map((r) => (
                   <option key={r} value={r}>
                     {ROLE_CONFIG[r].label}
                   </option>
                 ))}
               </select>
+              {candidateRoles.length === 0 && parentVendor && (
+                <p className="text-[11px] text-slate-500 italic">
+                  No other roles are permitted under {parentVendor.name} ({ROLE_CONFIG[parentVendor.role].label}).
+                </p>
+              )}
             </div>
 
             {/* Role Conflict Warning if children incompatible */}

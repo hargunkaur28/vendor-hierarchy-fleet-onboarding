@@ -199,6 +199,13 @@ describe('Phase 4: MoveProfileModal (F2) & Change Role (F3)', () => {
     const roleSelect = screen.getByRole('combobox');
     expect(roleSelect).toBeInTheDocument();
 
+    // Verify condition a: roles invalid under current parent (GROUP_VENDOR) are pre-filtered out
+    const optionValues = Array.from(roleSelect.querySelectorAll('option')).map((o) => o.value);
+    expect(optionValues).not.toContain('SITE_ADMIN');
+    expect(optionValues).not.toContain('GROUP_VENDOR');
+    expect(optionValues).not.toContain('ADMIN');
+    expect(optionValues).toContain('DEPLOYMENT_ASSOCIATE');
+
     // Attempt to change Sub Vendor with children into DEPLOYMENT_ASSOCIATE (which allows NO children)
     fireEvent.change(roleSelect, { target: { value: 'DEPLOYMENT_ASSOCIATE' } });
 
