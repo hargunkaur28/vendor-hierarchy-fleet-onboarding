@@ -14,9 +14,9 @@ export const TeamPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col overflow-hidden">
       <TreeToolbar />
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <HierarchyTree
           onMoveProfile={handleMoveProfile}
           onEditVendor={handleEditVendor}

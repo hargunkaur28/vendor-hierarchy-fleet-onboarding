@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { ChevronUp, ChevronDown, UserX } from 'lucide-react';
 import type { Vendor } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
@@ -42,6 +42,18 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
       Object.values(vendorsById)[0]
     );
   }, [vendorsById]);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Center the root node horizontally when the tree initially renders or root changes
+  useEffect(() => {
+    if (containerRef.current) {
+      const el = containerRef.current;
+      if (el.scrollWidth > el.clientWidth) {
+        el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+      }
+    }
+  }, [rootNode?.id]);
 
   // Keyboard navigation handler for tree nodes
   const handleNodeKeyDown = (
@@ -232,11 +244,12 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
 
   return (
     <div
-      className="w-full min-h-[600px] overflow-auto p-8 flex justify-center bg-slate-50/60"
+      ref={containerRef}
+      className="w-full h-full min-h-[600px] overflow-auto p-8 bg-slate-50/60"
       role="tree"
       aria-label="Organization hierarchy tree"
     >
-      <div className="inline-flex min-w-max justify-center py-4">
+      <div className="w-max min-w-full flex flex-col items-center py-4 px-16">
         {renderBranch(rootNode.id)}
       </div>
     </div>
