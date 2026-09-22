@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Menu, Sliders, ChevronDown, Check, UserCheck } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { selectCurrentUser, selectExpiringDocuments } from '@/store/selectors';
+import { selectExpiringDocuments } from '@/store/selectors';
 import { ROLE_CONFIG } from '@/config/roles';
 import { Avatar } from '@/components/common/Avatar';
 import { DevPanel } from '@/components/dev/DevPanel';
@@ -18,8 +18,8 @@ export const Header: React.FC<HeaderProps> = ({
   const currentUserId = useAppStore((s) => s.currentUserId);
   const switchUser = useAppStore((s) => s.switchUser);
   const vendorsById = useAppStore((s) => s.vendorsById);
-  const currentUser = selectCurrentUser(useAppStore.getState());
-  const expiringDocs = selectExpiringDocuments(useAppStore.getState());
+  const currentUser = useAppStore((s) => s.vendorsById[s.currentUserId]);
+  const expiringCount = useAppStore((s) => selectExpiringDocuments(s).length);
 
   const [isViewAsOpen, setIsViewAsOpen] = useState(false);
   const [isDevPanelOpen, setIsDevPanelOpen] = useState(false);
@@ -70,11 +70,11 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-            title={`${expiringDocs.length} expiring documents`}
-            aria-label={`Notifications (${expiringDocs.length} reminders)`}
+            title={`${expiringCount} expiring documents`}
+            aria-label={`Notifications (${expiringCount} reminders)`}
           >
             <Bell className="w-4 h-4" />
-            {expiringDocs.length > 0 && (
+            {expiringCount > 0 && (
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full" />
             )}
           </button>

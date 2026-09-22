@@ -36,6 +36,16 @@ export function loadDb(): MockDatabase {
       return initial;
     }
     const parsed = JSON.parse(raw) as MockDatabase;
+    if (
+      !parsed ||
+      !parsed.vendors ||
+      !parsed.vendors['admin'] ||
+      Object.keys(parsed.vendors).length === 0
+    ) {
+      const initial = generateSeedData();
+      saveDb(initial);
+      return initial;
+    }
     return parsed;
   } catch {
     const initial = generateSeedData();

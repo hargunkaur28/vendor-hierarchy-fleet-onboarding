@@ -22,13 +22,23 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
   const setSelectedVendorId = useAppStore((s) => s.setSelectedVendorId);
   const isLoading = useAppStore((s) => s.isLoading);
 
-  const { matchIds, visibleIds, hasFilter } = selectVisibleTree(useAppStore.getState());
+  const searchFilters = useAppStore((s) => s.searchFilters);
+  const statusFilter = useAppStore((s) => s.statusFilter);
+
+  // Memoize visible tree reactively based on filters and vendors
+  const { matchIds, visibleIds, hasFilter } = useMemo(() => {
+    return selectVisibleTree({
+      vendorsById,
+      searchFilters,
+      statusFilter,
+    } as Parameters<typeof selectVisibleTree>[0]);
+  }, [vendorsById, searchFilters, statusFilter]);
 
   // Find root node (vendor without parentId, or 'admin')
   const rootNode = useMemo(() => {
     return (
-      Object.values(vendorsById).find((v) => !v.parentId) ||
       vendorsById['admin'] ||
+      Object.values(vendorsById).find((v) => !v.parentId) ||
       Object.values(vendorsById)[0]
     );
   }, [vendorsById]);

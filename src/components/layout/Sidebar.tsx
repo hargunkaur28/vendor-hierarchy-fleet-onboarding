@@ -11,17 +11,16 @@ import {
   LogOut,
   CarTaxiFront,
 } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
-import { selectCurrentUser } from '@/store/selectors';
 import { ROLE_CONFIG } from '@/config/roles';
 import { Avatar } from '@/components/common/Avatar';
+import { useAppStore } from '@/store/useAppStore';
 
 interface SidebarProps {
   onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
-  const currentUser = selectCurrentUser(useAppStore.getState());
+  const currentUser = useAppStore((s) => s.vendorsById[s.currentUserId]);
   const currentRole = currentUser?.role ?? 'ADMIN';
   const roleConfig = ROLE_CONFIG[currentRole];
   const switchUser = useAppStore((s) => s.switchUser);

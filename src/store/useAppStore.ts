@@ -97,9 +97,12 @@ export interface AppState {
   initApp: () => Promise<void>;
 }
 
+const initialDb = loadDb();
+const initialChildren = buildChildrenIndex(initialDb.vendors);
+
 export const useAppStore = create<AppState>()(
   immer((set, get) => ({
-    isInitialized: false,
+    isInitialized: true,
     isLoading: false,
     error: null,
 
@@ -114,8 +117,8 @@ export const useAppStore = create<AppState>()(
     },
 
     // Vendors state
-    vendorsById: {},
-    childrenIndex: {},
+    vendorsById: initialDb.vendors,
+    childrenIndex: initialChildren,
 
     loadVendors: async () => {
       const vendors = await vendorsApi.listVendors();
@@ -225,8 +228,8 @@ export const useAppStore = create<AppState>()(
     },
 
     // Fleet state
-    vehiclesById: {},
-    driversById: {},
+    vehiclesById: initialDb.vehicles,
+    driversById: initialDb.drivers,
 
     loadFleet: async () => {
       const [vehicles, drivers] = await Promise.all([
@@ -394,7 +397,7 @@ export const useAppStore = create<AppState>()(
     },
 
     // Delegations
-    delegationsById: {},
+    delegationsById: initialDb.delegations,
 
     loadDelegations: async () => {
       const list = await delegationApi.listDelegations();
@@ -455,7 +458,7 @@ export const useAppStore = create<AppState>()(
     },
 
     // Audit
-    auditLogs: [],
+    auditLogs: initialDb.auditLogs,
 
     loadAuditLogs: async () => {
       const res = await auditApi.listAuditLogs({ limit: 100 });
@@ -487,7 +490,7 @@ export const useAppStore = create<AppState>()(
         state.searchFilters = { ...state.searchFilters, ...filters };
       });
     },
-    expandedIds: new Set(['admin', 'sa-blr', 'gv-south']),
+    expandedIds: new Set(['admin', 'sa-deepalitesting', 'gv-demo-group-vendor']),
     toggleExpanded: (id) => {
       set((state) => {
         if (state.expandedIds.has(id)) {
