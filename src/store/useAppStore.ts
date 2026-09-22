@@ -76,8 +76,8 @@ export interface AppState {
   // ─── UI ───────────────────────────────────────────────────────────
   selectedVendorId: string | null;
   setSelectedVendorId: (id: string | null) => void;
-  viewMode: 'tree' | 'compact';
-  setViewMode: (mode: 'tree' | 'compact') => void;
+  viewMode: 'tree' | 'horizontal' | 'compact';
+  setViewMode: (mode: 'tree' | 'horizontal' | 'compact') => void;
   searchFilters: SearchFilters;
   setSearchFilters: (filters: Partial<SearchFilters>) => void;
   expandedIds: Set<string>;
