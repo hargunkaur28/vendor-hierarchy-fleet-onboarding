@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
@@ -81,9 +81,17 @@ describe('Phase 3: Hierarchy Tree & App Shell Components', () => {
 
       const searchInput = screen.getByPlaceholderText('Search by name, email or Phone No.');
       await user.type(searchInput, 'Regional');
-      expect(useAppStore.getState().searchFilters.search).toBe('Regional');
+
+      // Immediate input response (zero lag)
+      expect(searchInput).toHaveValue('Regional');
+
+      // Debounced search updates store
+      await waitFor(() => {
+        expect(useAppStore.getState().searchFilters.search).toBe('Regional');
+      });
 
       await user.keyboard('{Escape}');
+      expect(searchInput).toHaveValue('');
       expect(useAppStore.getState().searchFilters.search).toBe('');
     });
   });

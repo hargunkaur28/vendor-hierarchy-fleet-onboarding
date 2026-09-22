@@ -3,7 +3,7 @@ import type { Vendor, Vehicle, Driver, PermissionKey } from '@/types';
 import { getDescendantIds, getAncestors } from '@/lib/tree';
 import { getEffectivePermissions } from '@/lib/permissions';
 import { isVehicleCompliant, isDriverCompliant, getDocumentStatus } from '@/lib/compliance';
-import { searchTree, buildAllSearchKeys } from '@/lib/search';
+import { searchTree, getOrBuildSearchKeys } from '@/lib/search';
 
 /**
  * Returns the currently logged in vendor actor.
@@ -124,7 +124,7 @@ export function selectVisibleTree(state: AppState): {
     return { visibleIds: all, matchIds: all, hasFilter: false };
   }
 
-  const searchKeys = buildAllSearchKeys(state.vendorsById);
+  const searchKeys = getOrBuildSearchKeys(state.vendorsById);
   const result = searchTree(state.searchFilters, state.vendorsById, searchKeys);
   const matchIds = new Set(result.matchIds);
   const visibleIds = new Set(result.visibleIds);

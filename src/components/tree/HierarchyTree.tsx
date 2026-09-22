@@ -55,6 +55,50 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
     }
   }, [rootNode?.id]);
 
+  // Auto-scroll first matched node into view centered on BOTH axes when search filters match
+  useEffect(() => {
+    if (hasFilter && matchIds.size > 0) {
+      const firstMatchId = Array.from(matchIds)[0];
+      if (firstMatchId) {
+        const raf1 = requestAnimationFrame(() => {
+          const raf2 = requestAnimationFrame(() => {
+            const matchEl = document.getElementById(`node-${firstMatchId}`);
+            const container = containerRef.current;
+            if (matchEl && container) {
+              const cardRect = matchEl.getBoundingClientRect();
+              const containerRect = container.getBoundingClientRect();
+
+              const targetScrollTop =
+                container.scrollTop +
+                (cardRect.top - containerRect.top) -
+                container.clientHeight / 2 +
+                cardRect.height / 2;
+
+              const targetScrollLeft =
+                container.scrollLeft +
+                (cardRect.left - containerRect.left) -
+                container.clientWidth / 2 +
+                cardRect.width / 2;
+
+              if (typeof container.scrollTo === 'function') {
+                container.scrollTo({
+                  top: Math.max(0, targetScrollTop),
+                  left: Math.max(0, targetScrollLeft),
+                  behavior: 'smooth',
+                });
+              } else {
+                container.scrollTop = Math.max(0, targetScrollTop);
+                container.scrollLeft = Math.max(0, targetScrollLeft);
+              }
+            }
+          });
+          return () => cancelAnimationFrame(raf2);
+        });
+        return () => cancelAnimationFrame(raf1);
+      }
+    }
+  }, [hasFilter, matchIds]);
+
   // Keep DOM focus in sync with selectedVendorId when selection changes
   useEffect(() => {
     if (selectedVendorId) {
@@ -97,9 +141,45 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
 
     const focusNode = (targetId: string) => {
       const targetEl = document.getElementById(`node-${targetId}`);
-      if (targetEl) {
+      const container = containerRef.current;
+      if (targetEl && container) {
         targetEl.focus();
-        targetEl.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        const cardRect = targetEl.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        const isVerticallyOutside =
+          cardRect.top < containerRect.top + 24 ||
+          cardRect.bottom > containerRect.bottom - 24;
+        const isHorizontallyOutside =
+          cardRect.left < containerRect.left + 24 ||
+          cardRect.right > containerRect.right - 24;
+
+        if (isVerticallyOutside || isHorizontallyOutside) {
+          const targetScrollTop =
+            container.scrollTop +
+            (cardRect.top - containerRect.top) -
+            container.clientHeight / 2 +
+            cardRect.height / 2;
+
+          const targetScrollLeft =
+            container.scrollLeft +
+            (cardRect.left - containerRect.left) -
+            container.clientWidth / 2 +
+            cardRect.width / 2;
+
+          if (typeof container.scrollTo === 'function') {
+            container.scrollTo({
+              top: Math.max(0, targetScrollTop),
+              left: Math.max(0, targetScrollLeft),
+              behavior: 'smooth',
+            });
+          } else {
+            container.scrollTop = Math.max(0, targetScrollTop);
+            container.scrollLeft = Math.max(0, targetScrollLeft);
+          }
+        }
+      } else if (targetEl) {
+        targetEl.focus();
       }
       setSelectedVendorId(targetId);
     };
@@ -290,11 +370,11 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
   return (
     <div
       ref={containerRef}
-      className="w-full h-full min-h-[600px] overflow-auto p-8 bg-slate-50/60"
+      className="w-full h-full overflow-auto p-8 bg-slate-50/60"
       role="tree"
       aria-label="Organization hierarchy tree"
     >
-      <div className="w-max min-w-full flex flex-col items-center py-4 px-16">
+      <div className="w-max min-w-full flex flex-col items-center pt-6 pb-64 px-16">
         {renderBranch(rootNode.id)}
       </div>
     </div>

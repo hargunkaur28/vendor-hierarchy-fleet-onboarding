@@ -572,6 +572,8 @@ export const useAppStore = create<AppState>()(
           state.driversById = db.drivers;
           state.delegationsById = db.delegations;
           state.auditLogs = db.auditLogs;
+          state.searchFilters = { search: '', tags: [], roles: [] };
+          state.selectedVendorId = 'admin';
           state.isInitialized = true;
           state.isLoading = false;
         });

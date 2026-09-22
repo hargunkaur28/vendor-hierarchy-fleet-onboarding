@@ -105,3 +105,19 @@ export function buildAllSearchKeys(byId: VendorMap): Record<string, string> {
   }
   return keys;
 }
+
+let cachedVendors: VendorMap | null = null;
+let cachedSearchKeys: Record<string, string> = {};
+
+/**
+ * Returns precomputed search keys for vendorsById, reusing the cached mapping
+ * if the vendorsById reference has not changed.
+ */
+export function getOrBuildSearchKeys(byId: VendorMap): Record<string, string> {
+  if (byId === cachedVendors) {
+    return cachedSearchKeys;
+  }
+  cachedVendors = byId;
+  cachedSearchKeys = buildAllSearchKeys(byId);
+  return cachedSearchKeys;
+}

@@ -16,7 +16,7 @@ interface TreeNodeCardProps {
   onKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
-export const TreeNodeCard: React.FC<TreeNodeCardProps> = ({
+export const TreeNodeCard: React.FC<TreeNodeCardProps> = React.memo(({
   id,
   vendor,
   isSelected = false,
@@ -135,4 +135,4 @@ export const TreeNodeCard: React.FC<TreeNodeCardProps> = ({
       )}
     </div>
   );
-};
+});

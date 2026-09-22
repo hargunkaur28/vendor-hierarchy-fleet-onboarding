@@ -12,6 +12,17 @@ export const TreeToolbar: React.FC = () => {
   const viewMode = useAppStore((s) => s.viewMode);
   const setViewMode = useAppStore((s) => s.setViewMode);
 
+  // Local immediate state for zero-lag input rendering
+  const [localSearch, setLocalSearch] = useState(searchFilters.search);
+  const [prevExternalSearch, setPrevExternalSearch] = useState(searchFilters.search);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync external search filter changes (e.g. cleared elsewhere) during render
+  if (searchFilters.search !== prevExternalSearch) {
+    setPrevExternalSearch(searchFilters.search);
+    setLocalSearch(searchFilters.search);
+  }
+
   const [isTagsOpen, setIsTagsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -41,13 +52,39 @@ export const TreeToolbar: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchFilters({ search: e.target.value });
+    const value = e.target.value;
+    setLocalSearch(value);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      setSearchFilters({ search: value });
+    }, 250);
+  };
+
+  const handleClearSearch = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    setLocalSearch('');
+    setSearchFilters({ search: '' });
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
-      setSearchFilters({ search: '' });
+      handleClearSearch();
       searchInputRef.current?.blur();
     }
   };
@@ -70,17 +107,17 @@ export const TreeToolbar: React.FC = () => {
           <input
             ref={searchInputRef}
             type="text"
-            value={searchFilters.search}
+            value={localSearch}
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
             placeholder="Search by name, email or Phone No."
             className="w-full pl-9 pr-14 py-2 text-sm bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200 focus:border-indigo-500 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
             aria-label="Search vendors by name, email or phone number"
           />
-          {searchFilters.search ? (
+          {localSearch ? (
             <button
               type="button"
-              onClick={() => setSearchFilters({ search: '' })}
+              onClick={handleClearSearch}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               aria-label="Clear search"
             >
