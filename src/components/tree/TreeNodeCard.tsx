@@ -10,6 +10,7 @@ interface TreeNodeCardProps {
   vendor: Vendor;
   isSelected?: boolean;
   isSearchMatch?: boolean;
+  isPulsing?: boolean;
   onSelect?: () => void;
   onMoveProfile?: () => void;
   onEdit?: () => void;
@@ -21,6 +22,7 @@ export const TreeNodeCard: React.FC<TreeNodeCardProps> = React.memo(({
   vendor,
   isSelected = false,
   isSearchMatch = false,
+  isPulsing = false,
   onSelect,
   onMoveProfile,
   onEdit,
@@ -74,6 +76,8 @@ export const TreeNodeCard: React.FC<TreeNodeCardProps> = React.memo(({
         onKeyDown?.(e);
       }}
       className={`relative w-[210px] bg-white rounded-lg p-3 text-left transition-all select-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+        isPulsing ? 'ring-4 ring-indigo-500/80 ring-offset-2 animate-pulse shadow-md' : ''
+      } ${
         isSelected
           ? 'border-2 border-indigo-600 shadow-xs'
           : isSearchMatch

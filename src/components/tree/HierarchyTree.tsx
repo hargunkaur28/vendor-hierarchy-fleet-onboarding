@@ -8,11 +8,13 @@ import { TreeNodeCard } from './TreeNodeCard';
 interface HierarchyTreeProps {
   onMoveProfile?: (vendor: Vendor) => void;
   onEditVendor?: (vendor: Vendor) => void;
+  pulsingVendorId?: string | null;
 }
 
 export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
   onMoveProfile,
   onEditVendor,
+  pulsingVendorId,
 }) => {
   const vendorsById = useAppStore((s) => s.vendorsById);
   const childrenIndex = useAppStore((s) => s.childrenIndex);
@@ -267,6 +269,7 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
           vendor={vendor}
           isSelected={isSelected}
           isSearchMatch={isMatch}
+          isPulsing={pulsingVendorId === vendorId}
           onSelect={() => setSelectedVendorId(vendorId)}
           onMoveProfile={onMoveProfile ? () => onMoveProfile(vendor) : undefined}
           onEdit={onEditVendor ? () => onEditVendor(vendor) : undefined}

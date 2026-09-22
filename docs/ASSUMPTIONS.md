@@ -60,3 +60,19 @@ All error codes strictly conform to Section 15's exact error catalog (`src/api/e
 - Attempting to move the root vendor maps to `PERMISSION_DENIED` with a descriptive message ("Root vendor cannot be moved"), as there is no `ROOT_VENDOR_IMMUTABLE` in Section 15.
 - Symmetrical vehicle assignment conflict uses `VEHICLE_ALREADY_ASSIGNED` alongside Section 15's `DRIVER_ALREADY_ASSIGNED`. Standard API codes `VALIDATION_ERROR`, `NOT_FOUND`, and `CONFLICT` are retained for HTTP API completeness.
 
+---
+
+## Phase 4: Move Profile Modal & Change Role
+
+### A16: Combobox Virtualization Threshold
+When valid parent options exceed 100 items (e.g., in the 5,000-vendor stress test mode), `@tanstack/react-virtual` is engaged with fixed 44px row heights to keep DOM nodes bounded to ~10 visible elements. When options count is ≤ 100, a standard scrollable list is rendered.
+
+### A17: Combobox Option Row Content
+Screen 3 displays vendor name rows. Section 14/F2 states: "Each option: name (primary), email (secondary), tiny child-count." We display name as primary (`text-sm font-medium text-slate-800`), email as secondary (`text-xs text-slate-400`), and a small child-count badge (`bg-slate-100 text-slate-600 rounded px-1.5 py-0.5 text-[10px]`) on the right. This maintains the clean style of Screen 3 while satisfying the spec's disambiguation requirement.
+
+### A18: Change Role Conflict Resolution
+If a vendor has children that are incompatible with the proposed new role (`allowedChildRoles`), the modal displays a specific inline error banner naming each blocking child and their role (`ROLE_CHANGE_CONFLICT`), disabling the submit button until those children are moved.
+
+### A19: Undo Toast Lifecycle
+The post-move Undo toast uses a 5,000ms duration with Sonner. Clicking "Undo" invokes `moveVendor(vendorId, previousParentId)`, restoring the exact prior state and recording an audit entry. If another move occurs while an Undo toast is active, the active toast is dismissed to prevent out-of-order race conditions.
+
