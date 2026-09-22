@@ -35,3 +35,20 @@ Spec says `^[A-Z]{2}\d{2}[A-Z]{1,3}\d{4}$`. Indian registration numbers actually
 
 ### A10: Driver license number regex
 Spec says `^[A-Z]{2}[0-9]{2}\s?[0-9]{11}$` with "tolerant normalization." Decision: normalize by uppercasing and stripping spaces, then validate against `^[A-Z]{2}\d{2}\d{11}$` (15 chars total). This matches the Indian DL format (state code + RTO code + 11 digits).
+
+---
+
+## Phase 2: Mock API & Store
+
+### A11: Failure injection and latency controls
+Configured via `devApiConfig` in `src/api/client.ts`. Default latency is 300–800ms in development, 0 in test environment (`import.meta.env.MODE === 'test'`). Failure rate is 0 by default and configurable up to 100% via dev panel with a `forceFailNext` one-shot trigger for testing optimistic update rollback.
+
+### A12: Validation precedence — cycle check before role restriction
+When moving a vendor, `wouldCreateCycle()` is evaluated before role compatibility. Moving under self or a descendant is fundamentally a topological violation, so it must return `CYCLE_DETECTED` consistently even if the target role would also violate the hierarchy.
+
+### A13: Driver availability state machine
+The `Driver` model tracks `availability: 'AVAILABLE' | 'ON_TRIP' | 'OFF_DUTY'`. The driver status toggle switches between `AVAILABLE` and `OFF_DUTY`. `ON_TRIP` is reserved for active rides and cannot be toggled manually.
+
+### A14: Bidirectional driver-vehicle assignment
+Assigning a driver updates both `vehicle.assignedDriverId` and `driver.assignedVehicleId`. Unassigning clears both fields simultaneously. If a vehicle is deactivated or blocked, its assigned driver remains associated but is flagged as unavailable in assignment comboboxes.
+
