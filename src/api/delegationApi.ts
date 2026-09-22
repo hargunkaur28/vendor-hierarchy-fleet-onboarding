@@ -119,6 +119,48 @@ export const delegationApi = {
     });
   },
 
+  async updateDelegationScope({
+    delegationId,
+    scope,
+    actorId,
+  }: {
+    delegationId: string;
+    scope: PermissionKey[];
+    actorId: string;
+  }): Promise<Delegation> {
+    return simulateNetwork((db) => {
+      const delegation = db.delegations[delegationId];
+      if (!delegation) throw new AppError('NOT_FOUND', 'Delegation record not found.');
+
+      if (actorId !== delegation.delegatorId) {
+        const delegations = Object.values(db.delegations);
+        const auth = authorize(
+          {
+            actorId,
+            permission: 'MANAGE_TEAM',
+            targetVendorId: delegation.delegatorId,
+          },
+          db.vendors,
+          delegations,
+        );
+        if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
+      }
+
+      delegation.scope = scope;
+      delegation.updatedAt = new Date().toISOString();
+
+      recordAudit(db, {
+        actorId,
+        action: 'UPDATE_DELEGATION_SCOPE',
+        targetType: 'DELEGATION',
+        targetId: delegationId,
+        details: { scope },
+      });
+
+      return delegation;
+    });
+  },
+
   async deleteDelegation({
     delegationId,
     actorId,

@@ -8,9 +8,9 @@ import {
   VehiclesPage,
   DriversPage,
   DocumentsPage,
-  DelegationPage,
   AuditPage,
 } from '@/pages/Placeholders';
+import { DelegationPage } from '@/pages/DelegationPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
 export function App() {

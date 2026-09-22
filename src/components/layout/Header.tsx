@@ -18,8 +18,14 @@ export const Header: React.FC<HeaderProps> = ({
   const currentUserId = useAppStore((s) => s.currentUserId);
   const switchUser = useAppStore((s) => s.switchUser);
   const vendorsById = useAppStore((s) => s.vendorsById);
+  const delegationsById = useAppStore((s) => s.delegationsById);
   const currentUser = useAppStore((s) => s.vendorsById[s.currentUserId]);
   const expiringCount = useAppStore((s) => selectExpiringDocuments(s).length);
+  const actingOnBehalfOf = useAppStore((s) => s.actingOnBehalfOf);
+  const setActingOnBehalfOf = useAppStore((s) => s.setActingOnBehalfOf);
+  const activeReceivedDelegations = Object.values(delegationsById).filter(
+    (d) => d.delegateId === currentUserId && d.enabled,
+  );
 
   const [isViewAsOpen, setIsViewAsOpen] = useState(false);
   const [isDevPanelOpen, setIsDevPanelOpen] = useState(false);
@@ -58,13 +64,38 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right side controls */}
         <div className="flex items-center gap-3">
-          {/* Acting on Behalf of indicator (if applicable) */}
-          {currentUserId !== 'admin' && (
+          {/* Acting on Behalf of indicator (Spec 4A.5: status-info pill) */}
+          {actingOnBehalfOf ? (
+            <button
+              type="button"
+              onClick={() => setActingOnBehalfOf(null)}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#1D4ED8]/10 text-[#1D4ED8] border border-[#1D4ED8]/30 hover:bg-[#1D4ED8]/20 transition-colors select-none cursor-pointer"
+              title="Click to stop acting on behalf"
+              aria-label={`Acting on behalf of ${vendorsById[actingOnBehalfOf]?.name ?? 'delegator'}. Click to exit.`}
+            >
+              <span className="w-2 h-2 rounded-full bg-[#1D4ED8] animate-pulse" />
+              <span>Acting for {vendorsById[actingOnBehalfOf]?.name ?? 'Delegator'}</span>
+              <span className="text-[10px] text-blue-600/80 font-normal ml-0.5">✕</span>
+            </button>
+          ) : activeReceivedDelegations.length > 0 && activeReceivedDelegations[0] ? (
+            <button
+              type="button"
+              onClick={() => {
+                const targetDelegatorId = activeReceivedDelegations[0]?.delegatorId;
+                if (targetDelegatorId) setActingOnBehalfOf(targetDelegatorId);
+              }}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors select-none cursor-pointer"
+              title={`Switch to act on behalf of ${vendorsById[activeReceivedDelegations[0].delegatorId]?.name ?? 'delegator'}`}
+            >
+              <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Act for {vendorsById[activeReceivedDelegations[0].delegatorId]?.name ?? 'Delegator'}</span>
+            </button>
+          ) : currentUserId !== 'admin' ? (
             <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
               <UserCheck className="w-3.5 h-3.5 text-blue-600" />
               <span>Perspective: {currentUser?.name}</span>
             </div>
-          )}
+          ) : null}
 
           {/* Expiry reminders notification bell */}
           <button

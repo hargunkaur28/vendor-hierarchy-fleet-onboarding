@@ -31,7 +31,9 @@ export interface AppState {
 
   // ─── Session ──────────────────────────────────────────────────────
   currentUserId: string;
+  actingOnBehalfOf: string | null;
   switchUser: (vendorId: string) => void;
+  setActingOnBehalfOf: (delegatorId: string | null) => void;
 
   // ─── Vendors ──────────────────────────────────────────────────────
   vendorsById: Record<string, Vendor>;
@@ -66,6 +68,7 @@ export interface AppState {
   delegationsById: Record<string, Delegation>;
   loadDelegations: () => Promise<void>;
   createDelegation: (data: Omit<CreateDelegationParams, 'actorId'>) => Promise<Delegation>;
+  updateDelegationScope: (id: string, scope: PermissionKey[]) => Promise<void>;
   toggleDelegation: (id: string, enabled: boolean) => Promise<void>;
   deleteDelegation: (id: string) => Promise<void>;
 
@@ -108,11 +111,18 @@ export const useAppStore = create<AppState>()(
 
     // Session
     currentUserId: 'admin',
+    actingOnBehalfOf: null,
     switchUser: (vendorId: string) => {
       set((state) => {
         state.currentUserId = vendorId;
         // Auto-select self when switching perspective
         state.selectedVendorId = vendorId;
+        state.actingOnBehalfOf = null;
+      });
+    },
+    setActingOnBehalfOf: (delegatorId: string | null) => {
+      set((state) => {
+        state.actingOnBehalfOf = delegatorId;
       });
     },
 
@@ -446,6 +456,19 @@ export const useAppStore = create<AppState>()(
         });
         throw err;
       }
+    },
+
+    updateDelegationScope: async (id, scope) => {
+      const actorId = get().currentUserId;
+      const updated = await delegationApi.updateDelegationScope({
+        delegationId: id,
+        scope,
+        actorId,
+      });
+      set((state) => {
+        state.delegationsById[id] = updated;
+      });
+      await get().loadAuditLogs();
     },
 
     deleteDelegation: async (id) => {

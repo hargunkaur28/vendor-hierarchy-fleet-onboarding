@@ -1,5 +1,5 @@
 import type { AppState } from './useAppStore';
-import type { Vendor, Vehicle, Driver, PermissionKey } from '@/types';
+import type { Vendor, Vehicle, Driver, PermissionKey, Delegation } from '@/types';
 import { getDescendantIds, getAncestors } from '@/lib/tree';
 import { getEffectivePermissions } from '@/lib/permissions';
 import { isVehicleCompliant, isDriverCompliant, getDocumentStatus } from '@/lib/compliance';
@@ -231,4 +231,26 @@ export function selectExpiringDocuments(
   }
 
   return items;
+}
+
+/**
+ * Returns delegations created by the specified user.
+ */
+export function selectDelegationsCreatedByUser(
+  state: AppState,
+  userId: string,
+): Delegation[] {
+  return Object.values(state.delegationsById).filter((d) => d.delegatorId === userId);
+}
+
+/**
+ * Returns enabled delegations assigned to the specified user (where user is the delegate).
+ */
+export function selectActiveDelegationsForUser(
+  state: AppState,
+  userId: string,
+): Delegation[] {
+  return Object.values(state.delegationsById).filter(
+    (d) => d.delegateId === userId && d.enabled,
+  );
 }

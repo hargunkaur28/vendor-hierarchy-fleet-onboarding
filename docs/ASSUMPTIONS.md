@@ -79,3 +79,16 @@ The post-move Undo toast uses a 5,000ms duration with Sonner. Clicking "Undo" in
 ### A20: Change Role Pre-filtering (Condition a vs Condition b)
 Per Spec F3, candidate roles in the 'Select New Role' dropdown are strictly pre-filtered to roles allowed under the node's current parent (`isRoleAllowedUnder(role, parentVendor.role)`). If the node has existing children that would be incompatible with a candidate role (Condition b, e.g. converting a Sub Vendor with children to a Deployment Associate), the option is present but selecting it triggers the inline `ROLE_CHANGE_CONFLICT` warning banner and blocks submission until the children are moved.
 
+---
+
+## Phase 5: Permissions & Delegation (F4, F5)
+
+### A21: Delegation Visibility and Descendant Scope
+Delegation creation is strictly restricted to direct and indirect descendants of the delegator (`getDescendantIds(currentUserId, childrenIndex)`). Vendors with no descendants in their subtree (such as leaf Deployment Associates) see a clean informational message indicating delegation is only available for vendors with team members in their subtree.
+
+### A22: Acting on Behalf Multi-delegation Resolution
+If a user receives active delegations from multiple delegators, the top navbar provides an "Acting on behalf of" control that allows selecting which delegator's perspective to assume or switching back to their own direct identity. While active, the top banner reminds the user of the active delegation and displays their allowed scope chips.
+
+### A23: Permission Matrix Ancestor Walk for Blocking Tooltip
+When a permission is directly granted to a vendor (`vendor.grantedPermissions.includes(perm)`) but blocked by an ancestor (`!effectivePermissions.includes(perm)`), the matrix uses `findPermissionBlocker(vendor.id, perm, vendorsById)` to identify the first ancestor up the hierarchy whose granted set lacks that permission, displaying `"Blocked by {ancestor.name}"` in a tooltip with a striped/grey visual indicator.
+
