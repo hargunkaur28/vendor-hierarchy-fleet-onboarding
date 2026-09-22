@@ -1,25 +1,25 @@
+/**
+ * Exact error code union conforming strictly to Section 15 of the specification.
+ */
 export type ErrorCode =
-  | 'ROOT_VENDOR_IMMUTABLE'
-  | 'PARENT_NOT_FOUND'
-  | 'VENDOR_NOT_FOUND'
-  | 'CYCLE_DETECTED'
-  | 'ROLE_RESTRICTION'
-  | 'SUSPENDED_PARENT'
-  | 'INSUFFICIENT_PERMISSIONS'
-  | 'OUT_OF_SCOPE'
-  | 'DELEGATION_EXPIRED'
-  | 'SUSPENDED_ANCESTOR'
-  | 'DUPLICATE_REG_NO'
-  | 'DUPLICATE_DRIVER_PHONE'
-  | 'NON_COMPLIANT_VEHICLE'
-  | 'NON_COMPLIANT_DRIVER'
-  | 'DRIVER_ALREADY_ASSIGNED'
-  | 'VEHICLE_NOT_FOUND'
-  | 'DRIVER_NOT_FOUND'
-  | 'DOCUMENT_NOT_FOUND'
-  | 'DELEGATION_NOT_FOUND'
   | 'NETWORK_ERROR'
-  | 'VALIDATION_ERROR';
+  | 'CYCLE_DETECTED'
+  | 'INVALID_PARENT_ROLE'
+  | 'SAME_PARENT'
+  | 'PERMISSION_DENIED'
+  | 'OUT_OF_SCOPE'
+  | 'DELEGATION_INVALID'
+  | 'ACCOUNT_SUSPENDED'
+  | 'DUPLICATE_REG_NO'
+  | 'DRIVER_ALREADY_ASSIGNED'
+  | 'VEHICLE_ALREADY_ASSIGNED'
+  | 'VEHICLE_NON_COMPLIANT'
+  | 'VEHICLE_BLOCKED'
+  | 'DOC_INVALID_FILE'
+  | 'ROLE_CHANGE_CONFLICT'
+  | 'VALIDATION_ERROR'
+  | 'NOT_FOUND'
+  | 'CONFLICT';
 
 export class AppError extends Error {
   public readonly code: ErrorCode;
@@ -27,7 +27,7 @@ export class AppError extends Error {
   public readonly details?: Record<string, unknown>;
 
   constructor(code: ErrorCode, message?: string, details?: Record<string, unknown>, status = 400) {
-    super(message ?? DEFAULT_ERROR_MESSAGES[code] ?? code);
+    super(message ?? ERROR_MESSAGES[code] ?? code);
     this.name = 'AppError';
     this.code = code;
     this.status = status;
@@ -38,26 +38,28 @@ export class AppError extends Error {
   }
 }
 
-export const DEFAULT_ERROR_MESSAGES: Record<ErrorCode, string> = {
-  ROOT_VENDOR_IMMUTABLE: 'Root vendor cannot be moved, suspended, or modified.',
-  PARENT_NOT_FOUND: 'Selected parent vendor does not exist.',
-  VENDOR_NOT_FOUND: 'Vendor not found.',
-  CYCLE_DETECTED: 'Cannot move vendor under itself or its descendants (cycle detected).',
-  ROLE_RESTRICTION: 'Role hierarchy violation: vendor role is not permitted under selected parent.',
-  SUSPENDED_PARENT: 'Cannot move under a suspended parent vendor.',
-  INSUFFICIENT_PERMISSIONS: 'You do not have permission to perform this action.',
-  OUT_OF_SCOPE: 'Target vendor is outside your administrative scope.',
-  DELEGATION_EXPIRED: 'Your delegation to manage this vendor has expired or is disabled.',
-  SUSPENDED_ANCESTOR: 'Action blocked because an ancestor vendor in the hierarchy is suspended.',
-  DUPLICATE_REG_NO: 'A vehicle with this registration number already exists.',
-  DUPLICATE_DRIVER_PHONE: 'A driver with this phone number already exists.',
-  NON_COMPLIANT_VEHICLE: 'Vehicle cannot be activated: missing, rejected, or expired documents.',
-  NON_COMPLIANT_DRIVER: 'Driver cannot be assigned: license is invalid or expired.',
-  DRIVER_ALREADY_ASSIGNED: 'This driver is already assigned to an active vehicle.',
-  VEHICLE_NOT_FOUND: 'Vehicle not found.',
-  DRIVER_NOT_FOUND: 'Driver not found.',
-  DOCUMENT_NOT_FOUND: 'Document not found.',
-  DELEGATION_NOT_FOUND: 'Delegation record not found.',
-  NETWORK_ERROR: 'Simulated network failure. Please retry.',
+/**
+ * Exact message catalog from Section 15 of the specification.
+ */
+export const ERROR_MESSAGES: Record<ErrorCode, string> = {
+  NETWORK_ERROR: "Couldn't reach the server. Check your connection and retry.",
+  CYCLE_DETECTED: "A vendor can't be moved under itself or one of its own team members.",
+  INVALID_PARENT_ROLE: 'A vendor role is not permitted under the selected parent.',
+  SAME_PARENT: 'Vendor is already under this parent.',
+  PERMISSION_DENIED: "You don't have permission to perform this action.",
+  OUT_OF_SCOPE: "That vendor isn't part of your network.",
+  DELEGATION_INVALID: "Your delegation for this action is disabled or doesn't include it.",
+  ACCOUNT_SUSPENDED: 'This account or an ancestor account is suspended.',
+  DUPLICATE_REG_NO: 'A vehicle with this registration already exists.',
+  DRIVER_ALREADY_ASSIGNED: 'This driver is already assigned to a vehicle.',
+  VEHICLE_ALREADY_ASSIGNED: 'This vehicle already has an assigned driver.',
+  VEHICLE_NON_COMPLIANT: "Vehicle can't operate: documents missing, rejected, or expired.",
+  VEHICLE_BLOCKED: 'This vehicle is blocked from operation.',
+  DOC_INVALID_FILE: 'Upload a PDF, JPG or PNG under 5 MB.',
+  ROLE_CHANGE_CONFLICT: "Can't change role: existing child vendors must be moved first.",
   VALIDATION_ERROR: 'Invalid input data.',
+  NOT_FOUND: 'The requested resource was not found.',
+  CONFLICT: 'The operation could not be completed due to a conflict.',
 };
+
+export const DEFAULT_ERROR_MESSAGES = ERROR_MESSAGES;

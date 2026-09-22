@@ -44,11 +44,11 @@ export const delegationApi = {
           db.vendors,
           delegations,
         );
-        if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+        if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
       }
 
       if (!db.vendors[delegatorId] || !db.vendors[delegateId]) {
-        throw new AppError('VENDOR_NOT_FOUND');
+        throw new AppError('NOT_FOUND', 'Vendor not found.');
       }
 
       const id = `del-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -88,7 +88,7 @@ export const delegationApi = {
   }): Promise<Delegation> {
     return simulateNetwork((db) => {
       const delegation = db.delegations[delegationId];
-      if (!delegation) throw new AppError('DELEGATION_NOT_FOUND');
+      if (!delegation) throw new AppError('NOT_FOUND', 'Delegation record not found.');
 
       if (actorId !== delegation.delegatorId) {
         const delegations = Object.values(db.delegations);
@@ -101,7 +101,7 @@ export const delegationApi = {
           db.vendors,
           delegations,
         );
-        if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+        if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
       }
 
       delegation.enabled = enabled;
@@ -128,7 +128,7 @@ export const delegationApi = {
   }): Promise<{ id: string }> {
     return simulateNetwork((db) => {
       const delegation = db.delegations[delegationId];
-      if (!delegation) throw new AppError('DELEGATION_NOT_FOUND');
+      if (!delegation) throw new AppError('NOT_FOUND', 'Delegation record not found.');
 
       if (actorId !== delegation.delegatorId) {
         const delegations = Object.values(db.delegations);
@@ -141,7 +141,7 @@ export const delegationApi = {
           db.vendors,
           delegations,
         );
-        if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+        if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
       }
 
       delete db.delegations[delegationId];

@@ -42,7 +42,7 @@ export const vendorsApi = {
   async getVendor(id: string): Promise<Vendor> {
     return simulateNetwork((db) => {
       const vendor = db.vendors[id];
-      if (!vendor) throw new AppError('VENDOR_NOT_FOUND');
+      if (!vendor) throw new AppError('NOT_FOUND', 'Vendor not found.');
       return vendor;
     });
   },
@@ -50,23 +50,23 @@ export const vendorsApi = {
   async moveVendor({ vendorId, newParentId, actorId }: MoveVendorParams): Promise<Vendor> {
     return simulateNetwork((db) => {
       const vendor = db.vendors[vendorId];
-      if (!vendor) throw new AppError('VENDOR_NOT_FOUND');
+      if (!vendor) throw new AppError('NOT_FOUND', 'Vendor not found.');
 
       if (vendor.role === 'ADMIN' || vendor.parentId === null) {
-        throw new AppError('ROOT_VENDOR_IMMUTABLE');
+        throw new AppError('PERMISSION_DENIED', 'Root vendor cannot be moved, suspended, or modified.');
       }
 
       if (vendor.parentId === newParentId) {
-        return vendor; // no-op
+        throw new AppError('SAME_PARENT');
       }
 
       const newParent = db.vendors[newParentId];
       if (!newParent) {
-        throw new AppError('PARENT_NOT_FOUND');
+        throw new AppError('NOT_FOUND', 'Selected parent vendor does not exist.');
       }
 
       if (newParent.status === 'SUSPENDED') {
-        throw new AppError('SUSPENDED_PARENT');
+        throw new AppError('ACCOUNT_SUSPENDED', 'Cannot move under a suspended parent vendor.');
       }
 
       if (wouldCreateCycle(vendorId, newParentId, db.vendors)) {
@@ -74,7 +74,7 @@ export const vendorsApi = {
       }
 
       if (!isRoleAllowedUnder(vendor.role, newParent.role)) {
-        throw new AppError('ROLE_RESTRICTION');
+        throw new AppError('INVALID_PARENT_ROLE');
       }
 
       const delegations = Object.values(db.delegations);
@@ -90,12 +90,12 @@ export const vendorsApi = {
 
       if (!auth.allowed) {
         if (auth.code === 'ACCOUNT_SUSPENDED') {
-          throw new AppError('SUSPENDED_ANCESTOR', auth.message);
+          throw new AppError('ACCOUNT_SUSPENDED', auth.message);
         }
         if (auth.code === 'OUT_OF_SCOPE') {
           throw new AppError('OUT_OF_SCOPE', auth.message);
         }
-        throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+        throw new AppError('PERMISSION_DENIED', auth.message);
       }
 
       const oldParentId = vendor.parentId;
@@ -117,13 +117,15 @@ export const vendorsApi = {
   async changeRole({ vendorId, newRole, actorId }: ChangeRoleParams): Promise<Vendor> {
     return simulateNetwork((db) => {
       const vendor = db.vendors[vendorId];
-      if (!vendor) throw new AppError('VENDOR_NOT_FOUND');
-      if (vendor.role === 'ADMIN') throw new AppError('ROOT_VENDOR_IMMUTABLE');
+      if (!vendor) throw new AppError('NOT_FOUND', 'Vendor not found.');
+      if (vendor.role === 'ADMIN') {
+        throw new AppError('PERMISSION_DENIED', 'Root vendor cannot be moved, suspended, or modified.');
+      }
 
       if (vendor.parentId) {
         const parent = db.vendors[vendor.parentId];
         if (parent && !isRoleAllowedUnder(newRole, parent.role)) {
-          throw new AppError('ROLE_RESTRICTION');
+          throw new AppError('INVALID_PARENT_ROLE');
         }
       }
 
@@ -134,7 +136,7 @@ export const vendorsApi = {
         const child = db.vendors[childId];
         if (child && !isRoleAllowedUnder(child.role, newRole)) {
           throw new AppError(
-            'ROLE_RESTRICTION',
+            'ROLE_CHANGE_CONFLICT',
             `Cannot change role: child ${child.name} (${child.role}) cannot report to ${newRole}`,
           );
         }
@@ -150,7 +152,7 @@ export const vendorsApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       const oldRole = vendor.role;
       vendor.role = newRole;
@@ -172,9 +174,9 @@ export const vendorsApi = {
     return simulateNetwork((db) => {
       if (vendor.parentId) {
         const parent = db.vendors[vendor.parentId];
-        if (!parent) throw new AppError('PARENT_NOT_FOUND');
+        if (!parent) throw new AppError('NOT_FOUND', 'Parent vendor does not exist.');
         if (!isRoleAllowedUnder(vendor.role, parent.role)) {
-          throw new AppError('ROLE_RESTRICTION');
+          throw new AppError('INVALID_PARENT_ROLE');
         }
       }
 
@@ -188,7 +190,7 @@ export const vendorsApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       const id = `v-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const now = new Date().toISOString();
@@ -216,7 +218,7 @@ export const vendorsApi = {
   async updateVendor({ vendorId, updates, actorId }: UpdateVendorParams): Promise<Vendor> {
     return simulateNetwork((db) => {
       const vendor = db.vendors[vendorId];
-      if (!vendor) throw new AppError('VENDOR_NOT_FOUND');
+      if (!vendor) throw new AppError('NOT_FOUND', 'Vendor not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -228,7 +230,7 @@ export const vendorsApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       Object.assign(vendor, updates);
       vendor.updatedAt = new Date().toISOString();
@@ -248,8 +250,10 @@ export const vendorsApi = {
   async suspendVendor({ vendorId, reason, actorId }: SuspendVendorParams): Promise<Vendor> {
     return simulateNetwork((db) => {
       const vendor = db.vendors[vendorId];
-      if (!vendor) throw new AppError('VENDOR_NOT_FOUND');
-      if (vendor.role === 'ADMIN') throw new AppError('ROOT_VENDOR_IMMUTABLE');
+      if (!vendor) throw new AppError('NOT_FOUND', 'Vendor not found.');
+      if (vendor.role === 'ADMIN') {
+        throw new AppError('PERMISSION_DENIED', 'Root vendor cannot be moved, suspended, or modified.');
+      }
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -261,7 +265,7 @@ export const vendorsApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       vendor.status = 'SUSPENDED';
       vendor.suspendedBy = {
@@ -286,7 +290,7 @@ export const vendorsApi = {
   async reactivateVendor({ vendorId, actorId }: { vendorId: string; actorId: string }): Promise<Vendor> {
     return simulateNetwork((db) => {
       const vendor = db.vendors[vendorId];
-      if (!vendor) throw new AppError('VENDOR_NOT_FOUND');
+      if (!vendor) throw new AppError('NOT_FOUND', 'Vendor not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -298,7 +302,7 @@ export const vendorsApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       vendor.status = 'ACTIVE';
       delete vendor.suspendedBy;
@@ -326,7 +330,7 @@ export const vendorsApi = {
   }): Promise<Vendor> {
     return simulateNetwork((db) => {
       const vendor = db.vendors[vendorId];
-      if (!vendor) throw new AppError('VENDOR_NOT_FOUND');
+      if (!vendor) throw new AppError('NOT_FOUND', 'Vendor not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -338,12 +342,12 @@ export const vendorsApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       for (const perm of permissions) {
         if (!canGrant(actorId, perm, db.vendors)) {
           throw new AppError(
-            'INSUFFICIENT_PERMISSIONS',
+            'PERMISSION_DENIED',
             'Cannot grant permissions you do not effectively hold.',
           );
         }

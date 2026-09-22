@@ -158,22 +158,5 @@ export type AuthResult =
   | { allowed: true; via: 'OWN' | 'DELEGATION'; onBehalfOfId?: string }
   | { allowed: false; code: ErrorCode; message: string };
 
-export type ErrorCode =
-  | 'NETWORK_ERROR'
-  | 'VALIDATION_ERROR'
-  | 'PERMISSION_DENIED'
-  | 'OUT_OF_SCOPE'
-  | 'DELEGATION_INVALID'
-  | 'ACCOUNT_SUSPENDED'
-  | 'NOT_FOUND'
-  | 'CYCLE_DETECTED'
-  | 'INVALID_PARENT_ROLE'
-  | 'SAME_PARENT'
-  | 'ROLE_CHANGE_CONFLICT'
-  | 'DUPLICATE_REG_NO'
-  | 'DRIVER_ALREADY_ASSIGNED'
-  | 'VEHICLE_ALREADY_ASSIGNED'
-  | 'VEHICLE_NON_COMPLIANT'
-  | 'VEHICLE_BLOCKED'
-  | 'DOC_INVALID_FILE'
-  | 'CONFLICT';
+import type { ErrorCode } from '@/api/errors';
+export type { ErrorCode };

@@ -52,3 +52,11 @@ The `Driver` model tracks `availability: 'AVAILABLE' | 'ON_TRIP' | 'OFF_DUTY'`. 
 ### A14: Bidirectional driver-vehicle assignment
 Assigning a driver updates both `vehicle.assignedDriverId` and `driver.assignedVehicleId`. Unassigning clears both fields simultaneously. If a vehicle is deactivated or blocked, its assigned driver remains associated but is flagged as unavailable in assignment comboboxes.
 
+### A15: Section 15 Error Code Catalog Conformance
+All error codes strictly conform to Section 15's exact error catalog (`src/api/errors.ts`):
+- Role placement rule violations map to `INVALID_PARENT_ROLE` (not `ROLE_RESTRICTION`).
+- Parent or ancestor suspensions map to `ACCOUNT_SUSPENDED` (not `SUSPENDED_PARENT`).
+- Vehicle compliance deficiencies map to `VEHICLE_NON_COMPLIANT` (not `NON_COMPLIANT_VEHICLE`).
+- Attempting to move the root vendor maps to `PERMISSION_DENIED` with a descriptive message ("Root vendor cannot be moved"), as there is no `ROOT_VENDOR_IMMUTABLE` in Section 15.
+- Symmetrical vehicle assignment conflict uses `VEHICLE_ALREADY_ASSIGNED` alongside Section 15's `DRIVER_ALREADY_ASSIGNED`. Standard API codes `VALIDATION_ERROR`, `NOT_FOUND`, and `CONFLICT` are retained for HTTP API completeness.
+

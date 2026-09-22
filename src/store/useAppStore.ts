@@ -264,8 +264,9 @@ export const useAppStore = create<AppState>()(
 
     toggleVehicleStatus: async (id) => {
       const actorId = get().currentUserId;
-      const prev = get().vehiclesById[id];
-      if (!prev) return;
+      const vehicle = get().vehiclesById[id];
+      if (!vehicle) return;
+      const prev = { ...vehicle };
 
       // Optimistic update
       const nextStatus = prev.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
@@ -416,8 +417,9 @@ export const useAppStore = create<AppState>()(
 
     toggleDelegation: async (id, enabled) => {
       const actorId = get().currentUserId;
-      const prev = get().delegationsById[id];
-      if (!prev) return;
+      const delegation = get().delegationsById[id];
+      if (!delegation) return;
+      const prev = { ...delegation };
 
       // Optimistic update
       set((state) => {

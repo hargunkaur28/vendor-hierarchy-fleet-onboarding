@@ -24,12 +24,12 @@ describe('Mock API & Store', () => {
     it('creates error with correct code and default message', () => {
       const err = new AppError('CYCLE_DETECTED');
       expect(err.code).toBe('CYCLE_DETECTED');
-      expect(err.message).toContain('cycle');
+      expect(err.message).toBe("A vendor can't be moved under itself or one of its own team members.");
     });
 
     it('allows custom override message', () => {
-      const err = new AppError('ROOT_VENDOR_IMMUTABLE', 'Custom root message');
-      expect(err.message).toBe('Custom root message');
+      const err = new AppError('PERMISSION_DENIED', 'Custom permission message');
+      expect(err.message).toBe('Custom permission message');
     });
   });
 
@@ -55,7 +55,7 @@ describe('Mock API & Store', () => {
           newParentId: 'sv-regional',
           actorId: 'admin',
         }),
-      ).rejects.toThrow(/cycle detected/);
+      ).rejects.toThrow(/A vendor can't be moved under itself/);
     });
 
     it('rejects invalid role hierarchy', async () => {
@@ -66,7 +66,7 @@ describe('Mock API & Store', () => {
           newParentId: 'sv-demo-sub-vendor-1',
           actorId: 'admin',
         }),
-      ).rejects.toThrow(/Role hierarchy violation/);
+      ).rejects.toThrow(/not permitted under the selected parent/);
     });
 
     it('successfully moves vendor under valid parent and writes audit log', async () => {
@@ -145,7 +145,7 @@ describe('Mock API & Store', () => {
       // Attempt to toggle to ACTIVE should fail because docs are missing
       await expect(
         fleetApi.toggleVehicleStatus({ vehicleId: newVeh.id, actorId: 'admin' }),
-      ).rejects.toThrow(/Vehicle cannot be activated/);
+      ).rejects.toThrow(/Vehicle can't operate/);
     });
 
     it('assigns compliant driver to vehicle and prevents double assignment', async () => {
@@ -242,7 +242,7 @@ describe('Mock API & Store', () => {
       expect(Object.keys(state.vendorsById).length).toBeGreaterThan(20);
     });
 
-    it('rolls back optimistic move on network failure', async () => {
+    it('rolls back optimistic moveVendor on network failure and restores prior parent and children index', async () => {
       await useAppStore.getState().initApp();
       const store = useAppStore.getState();
       const originalParent = store.vendorsById['sv-demo-sub-vendor-1']?.parentId;
@@ -255,11 +255,53 @@ describe('Mock API & Store', () => {
         store.moveVendor('sv-demo-sub-vendor-1', 'gv-regional-ops'),
       ).rejects.toThrow();
 
-      // Store should have rolled back to original parent
+      // Store should have rolled back to original parent and children index
       const rolledBackState = useAppStore.getState();
       expect(rolledBackState.vendorsById['sv-demo-sub-vendor-1']?.parentId).toBe(originalParent);
       expect(rolledBackState.childrenIndex['gv-demo-group-vendor']).toContain('sv-demo-sub-vendor-1');
-      expect(rolledBackState.childrenIndex['gv-regional-ops']).not.toContain('sv-demo-sub-vendor-1');
+      expect(rolledBackState.childrenIndex['gv-regional-ops'] ?? []).not.toContain('sv-demo-sub-vendor-1');
+    });
+
+    it('rolls back optimistic toggleVehicleStatus on failure and restores prior status', async () => {
+      await useAppStore.getState().initApp();
+      const store = useAppStore.getState();
+      const vehicleId = Object.keys(store.vehiclesById)[0]!;
+      const vehicle = store.vehiclesById[vehicleId]!;
+      const originalStatus = vehicle.status;
+      const expectedOpposite = originalStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+      // Force failure on next request
+      devApiConfig.forceFailNext = true;
+
+      await expect(
+        store.toggleVehicleStatus(vehicleId),
+      ).rejects.toThrow();
+
+      // State must be restored to original status, not left in the optimistically updated status
+      const rolledBackState = useAppStore.getState();
+      expect(rolledBackState.vehiclesById[vehicleId]?.status).toBe(originalStatus);
+      expect(rolledBackState.vehiclesById[vehicleId]?.status).not.toBe(expectedOpposite);
+    });
+
+    it('rolls back optimistic toggleDelegation on failure and restores prior delegation state', async () => {
+      await useAppStore.getState().initApp();
+      const store = useAppStore.getState();
+      const delegationId = Object.keys(store.delegationsById)[0]!;
+      const delegation = store.delegationsById[delegationId]!;
+      const originalEnabled = delegation.enabled;
+      const targetEnabled = !originalEnabled;
+
+      // Force failure on next request
+      devApiConfig.forceFailNext = true;
+
+      await expect(
+        store.toggleDelegation(delegationId, targetEnabled),
+      ).rejects.toThrow();
+
+      // State must be restored to original enabled boolean, not left in targetEnabled
+      const rolledBackState = useAppStore.getState();
+      expect(rolledBackState.delegationsById[delegationId]?.enabled).toBe(originalEnabled);
+      expect(rolledBackState.delegationsById[delegationId]?.enabled).not.toBe(targetEnabled);
     });
   });
 });

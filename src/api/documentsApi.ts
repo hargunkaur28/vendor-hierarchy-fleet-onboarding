@@ -41,7 +41,7 @@ export const documentsApi = {
           : db.drivers[entityId]?.ownerVendorId;
 
       if (!targetVendorId) {
-        throw new AppError(entityType === 'VEHICLE' ? 'VEHICLE_NOT_FOUND' : 'DRIVER_NOT_FOUND');
+        throw new AppError('NOT_FOUND', entityType === 'VEHICLE' ? 'Vehicle not found.' : 'Driver not found.');
       }
 
       const delegations = Object.values(db.delegations);
@@ -66,12 +66,12 @@ export const documentsApi = {
           db.vendors,
           delegations,
         );
-        if (!onboardAuth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+        if (!onboardAuth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
       }
 
       const entity = entityType === 'VEHICLE' ? db.vehicles[entityId] : db.drivers[entityId];
       if (!entity) {
-        throw new AppError(entityType === 'VEHICLE' ? 'VEHICLE_NOT_FOUND' : 'DRIVER_NOT_FOUND');
+        throw new AppError('NOT_FOUND', entityType === 'VEHICLE' ? 'Vehicle not found.' : 'Driver not found.');
       }
 
       const docId = `doc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -125,7 +125,7 @@ export const documentsApi = {
           : db.drivers[entityId]?.ownerVendorId;
 
       if (!targetVendorId) {
-        throw new AppError(entityType === 'VEHICLE' ? 'VEHICLE_NOT_FOUND' : 'DRIVER_NOT_FOUND');
+        throw new AppError('NOT_FOUND', entityType === 'VEHICLE' ? 'Vehicle not found.' : 'Driver not found.');
       }
 
       const delegations = Object.values(db.delegations);
@@ -138,15 +138,15 @@ export const documentsApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       const entity = entityType === 'VEHICLE' ? db.vehicles[entityId] : db.drivers[entityId];
       if (!entity) {
-        throw new AppError(entityType === 'VEHICLE' ? 'VEHICLE_NOT_FOUND' : 'DRIVER_NOT_FOUND');
+        throw new AppError('NOT_FOUND', entityType === 'VEHICLE' ? 'Vehicle not found.' : 'Driver not found.');
       }
 
       const doc = entity.documents.find((d) => d.id === docId);
-      if (!doc) throw new AppError('DOCUMENT_NOT_FOUND');
+      if (!doc) throw new AppError('NOT_FOUND', 'Document not found.');
 
       const now = new Date().toISOString();
       doc.verification = {

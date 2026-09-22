@@ -29,7 +29,7 @@ export const fleetApi = {
   async getVehicle(id: string): Promise<Vehicle> {
     return simulateNetwork((db) => {
       const v = db.vehicles[id];
-      if (!v) throw new AppError('VEHICLE_NOT_FOUND');
+      if (!v) throw new AppError('NOT_FOUND', 'Vehicle not found.');
       return v;
     });
   },
@@ -46,7 +46,7 @@ export const fleetApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       const normalizedReg = normalizeRegNo(vehicle.regNo);
       const duplicate = Object.values(db.vehicles).some(
@@ -90,7 +90,7 @@ export const fleetApi = {
   }): Promise<Vehicle> {
     return simulateNetwork((db) => {
       const vehicle = db.vehicles[vehicleId];
-      if (!vehicle) throw new AppError('VEHICLE_NOT_FOUND');
+      if (!vehicle) throw new AppError('NOT_FOUND', 'Vehicle not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -102,7 +102,7 @@ export const fleetApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       Object.assign(vehicle, updates);
       vehicle.updatedAt = new Date().toISOString();
@@ -128,7 +128,7 @@ export const fleetApi = {
   }): Promise<Vehicle> {
     return simulateNetwork((db) => {
       const vehicle = db.vehicles[vehicleId];
-      if (!vehicle) throw new AppError('VEHICLE_NOT_FOUND');
+      if (!vehicle) throw new AppError('NOT_FOUND', 'Vehicle not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -140,7 +140,7 @@ export const fleetApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       const newStatus = vehicle.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
@@ -149,8 +149,8 @@ export const fleetApi = {
         const { compliant, reasons } = isVehicleCompliant(vehicle);
         if (!compliant) {
           throw new AppError(
-            'NON_COMPLIANT_VEHICLE',
-            `Vehicle cannot be activated: missing, rejected, or expired documents. (${reasons.map((r) => r.detail).join(', ')})`,
+            'VEHICLE_NON_COMPLIANT',
+            `Vehicle can't operate: ${reasons.map((r) => r.detail).join(', ')}.`,
             { reasons },
           );
         }
@@ -182,7 +182,7 @@ export const fleetApi = {
   }): Promise<Vehicle> {
     return simulateNetwork((db) => {
       const vehicle = db.vehicles[vehicleId];
-      if (!vehicle) throw new AppError('VEHICLE_NOT_FOUND');
+      if (!vehicle) throw new AppError('NOT_FOUND', 'Vehicle not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -194,7 +194,7 @@ export const fleetApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       vehicle.blocked = {
         reason,
@@ -225,7 +225,7 @@ export const fleetApi = {
   }): Promise<Vehicle> {
     return simulateNetwork((db) => {
       const vehicle = db.vehicles[vehicleId];
-      if (!vehicle) throw new AppError('VEHICLE_NOT_FOUND');
+      if (!vehicle) throw new AppError('NOT_FOUND', 'Vehicle not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -237,7 +237,7 @@ export const fleetApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       delete vehicle.blocked;
       vehicle.updatedAt = new Date().toISOString();
@@ -266,7 +266,7 @@ export const fleetApi = {
   async getDriver(id: string): Promise<Driver> {
     return simulateNetwork((db) => {
       const d = db.drivers[id];
-      if (!d) throw new AppError('DRIVER_NOT_FOUND');
+      if (!d) throw new AppError('NOT_FOUND', 'Driver not found.');
       return d;
     });
   },
@@ -283,10 +283,10 @@ export const fleetApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       const duplicate = Object.values(db.drivers).some((d) => d.phone === driver.phone);
-      if (duplicate) throw new AppError('DUPLICATE_DRIVER_PHONE');
+      if (duplicate) throw new AppError('CONFLICT', 'A driver with this phone number already exists.');
 
       const id = `drv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const now = new Date().toISOString();
@@ -324,7 +324,7 @@ export const fleetApi = {
   }): Promise<Driver> {
     return simulateNetwork((db) => {
       const driver = db.drivers[driverId];
-      if (!driver) throw new AppError('DRIVER_NOT_FOUND');
+      if (!driver) throw new AppError('NOT_FOUND', 'Driver not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -336,7 +336,7 @@ export const fleetApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       Object.assign(driver, updates);
       driver.updatedAt = new Date().toISOString();
@@ -362,7 +362,7 @@ export const fleetApi = {
   }): Promise<Driver> {
     return simulateNetwork((db) => {
       const driver = db.drivers[driverId];
-      if (!driver) throw new AppError('DRIVER_NOT_FOUND');
+      if (!driver) throw new AppError('NOT_FOUND', 'Driver not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -374,7 +374,7 @@ export const fleetApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       driver.availability = driver.availability === 'AVAILABLE' ? 'OFF_DUTY' : 'AVAILABLE';
       driver.updatedAt = new Date().toISOString();
@@ -402,9 +402,9 @@ export const fleetApi = {
   }): Promise<{ vehicle: Vehicle; driver: Driver }> {
     return simulateNetwork((db) => {
       const vehicle = db.vehicles[vehicleId];
-      if (!vehicle) throw new AppError('VEHICLE_NOT_FOUND');
+      if (!vehicle) throw new AppError('NOT_FOUND', 'Vehicle not found.');
       const driver = db.drivers[driverId];
-      if (!driver) throw new AppError('DRIVER_NOT_FOUND');
+      if (!driver) throw new AppError('NOT_FOUND', 'Driver not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -416,13 +416,13 @@ export const fleetApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       // Check driver compliance
       const { compliant, reasons } = isDriverCompliant(driver);
       if (!compliant) {
         throw new AppError(
-          'NON_COMPLIANT_DRIVER',
+          'PERMISSION_DENIED',
           reasons[0]?.detail ?? 'Driver documents are non-compliant.',
         );
       }
@@ -434,7 +434,7 @@ export const fleetApi = {
       if (existingVehicle) {
         throw new AppError(
           'DRIVER_ALREADY_ASSIGNED',
-          `Driver is already assigned to vehicle ${existingVehicle.regNo}.`,
+          `This driver is already assigned to vehicle ${existingVehicle.regNo}.`,
         );
       }
 
@@ -464,7 +464,7 @@ export const fleetApi = {
   }): Promise<Vehicle> {
     return simulateNetwork((db) => {
       const vehicle = db.vehicles[vehicleId];
-      if (!vehicle) throw new AppError('VEHICLE_NOT_FOUND');
+      if (!vehicle) throw new AppError('NOT_FOUND', 'Vehicle not found.');
 
       const delegations = Object.values(db.delegations);
       const auth = authorize(
@@ -476,7 +476,7 @@ export const fleetApi = {
         db.vendors,
         delegations,
       );
-      if (!auth.allowed) throw new AppError('INSUFFICIENT_PERMISSIONS', auth.message);
+      if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
 
       const prevDriverId = vehicle.assignedDriverId;
       vehicle.assignedDriverId = null;
