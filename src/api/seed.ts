@@ -3,8 +3,7 @@ import type {
   Vehicle,
   Driver,
   DocumentRecord,
-  Delegation,
-  AuditEntry,
+  MockDatabase,
   RoleKey,
   DocType,
   FuelType,
@@ -17,13 +16,7 @@ import { addDays, subDays, formatISO } from 'date-fns';
 
 // ─── Seed DB shape ─────────────────────────────────────────────────
 
-export interface SeedDB {
-  vendors: Record<string, Vendor>;
-  vehicles: Record<string, Vehicle>;
-  drivers: Record<string, Driver>;
-  delegations: Record<string, Delegation>;
-  audit: AuditEntry[];
-}
+export type SeedDB = MockDatabase;
 
 // ─── Constants ─────────────────────────────────────────────────────
 
@@ -70,7 +63,7 @@ export function generateSeedData(seed = 42): SeedDB {
     vehicles: {},
     drivers: {},
     delegations: {},
-    audit: [],
+    auditLogs: [],
   };
 
   // Helper to add a vendor
@@ -319,7 +312,7 @@ export function generateSeedData(seed = 42): SeedDB {
   };
 
   // ── 7. Initial audit entries ──
-  db.audit.push({
+  db.auditLogs.push({
     id: 'audit-seed-1',
     at: formatISO(subDays(NOW, 30)),
     actorId: 'admin',
@@ -437,7 +430,7 @@ export function generateStressData(count = 5000, seed = 12345): SeedDB {
     vehicles: {},
     drivers: {},
     delegations: {},
-    audit: [],
+    auditLogs: [],
   };
 
   // Root

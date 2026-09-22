@@ -125,6 +125,14 @@ export interface AuditEntry {
   details: Record<string, unknown>;
 }
 
+export interface MockDatabase {
+  vendors: Record<string, Vendor>;
+  vehicles: Record<string, Vehicle>;
+  drivers: Record<string, Driver>;
+  delegations: Record<string, Delegation>;
+  auditLogs: AuditEntry[];
+}
+
 // ─── Store Shape ───────────────────────────────────────────────────
 
 export interface Session {
