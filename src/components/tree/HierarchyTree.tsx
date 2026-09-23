@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { ChevronUp, ChevronDown, UserX } from 'lucide-react';
 import type { Vendor } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
@@ -6,6 +6,7 @@ import { selectVisibleTree } from '@/store/selectors';
 import { TreeNodeCard } from './TreeNodeCard';
 import { HorizontalTreeView } from './HorizontalTreeView';
 import { CompactTreeView } from './CompactTreeView';
+import { TreeZoomControls } from './TreeZoomControls';
 
 interface HierarchyTreeProps {
   onMoveProfile?: (vendor: Vendor) => void;
@@ -49,6 +50,8 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
   }, [vendorsById]);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
 
   // Center the root node horizontally when the tree initially renders or root changes
   useEffect(() => {
@@ -59,6 +62,105 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
       }
     }
   }, [rootNode?.id]);
+
+  // Pinch-to-zoom (trackpad/touch) on tree canvas
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Ctrl+wheel or Trackpad pinch zoom
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = -e.deltaY * 0.003;
+        setZoom((prev) => Math.min(2.0, Math.max(0.2, Number((prev + delta).toFixed(2)))));
+      }
+    };
+
+    // Mobile / touch pinch-to-zoom
+    let initialDistance = 0;
+    let initialZoom = 1;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        if (t1 && t2) {
+          initialDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+          initialZoom = zoom;
+        }
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && initialDistance > 0) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        if (t1 && t2) {
+          const currentDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+          const factor = currentDistance / initialDistance;
+          setZoom(Math.min(2.0, Math.max(0.2, Number((initialZoom * factor).toFixed(2)))));
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      initialDistance = 0;
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [zoom]);
+
+  const handleFitToScreen = () => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+
+    const contentWidth = content.offsetWidth || content.scrollWidth;
+    const contentHeight = content.offsetHeight || content.scrollHeight;
+
+    const viewportWidth = container.clientWidth - 48;
+    const viewportHeight = container.clientHeight - 48;
+
+    if (contentWidth > 0 && contentHeight > 0) {
+      const scaleX = viewportWidth / contentWidth;
+      const scaleY = viewportHeight / contentHeight;
+      const fitScale = Math.min(scaleX, scaleY, 1.0);
+      const clamped = Math.max(0.2, Number(fitScale.toFixed(2)));
+      setZoom(clamped);
+
+      setTimeout(() => {
+        if (container.scrollWidth > container.clientWidth) {
+          container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
+        }
+        container.scrollTop = 0;
+      }, 50);
+    }
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1.0);
+    setTimeout(() => {
+      const container = containerRef.current;
+      if (container) {
+        if (container.scrollWidth > container.clientWidth) {
+          container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
+        }
+        container.scrollTop = 0;
+      }
+    }, 50);
+  };
 
   // Auto-scroll first matched node into view centered on BOTH axes when search filters match
   useEffect(() => {
@@ -368,15 +470,33 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full overflow-auto p-8 bg-slate-50/60"
-      role="tree"
-      aria-label="Organization hierarchy tree"
-    >
-      <div className="w-max min-w-full flex flex-col items-center pt-6 pb-64 px-16">
-        {renderBranch(rootNode.id)}
+    <div className="relative w-full h-full overflow-hidden">
+      <div
+        ref={containerRef}
+        className="w-full h-full overflow-auto p-8 bg-slate-50/60"
+        role="tree"
+        aria-label="Organization hierarchy tree"
+      >
+        <div
+          ref={contentRef}
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: 'top center',
+            transition: 'transform 0.15s ease-out',
+          }}
+          className="w-max min-w-full flex flex-col items-center pt-6 pb-64 px-16"
+        >
+          {renderBranch(rootNode.id)}
+        </div>
       </div>
+
+      <TreeZoomControls
+        zoom={zoom}
+        onZoomIn={() => setZoom((prev) => Math.min(2.0, Number((prev + 0.15).toFixed(2))))}
+        onZoomOut={() => setZoom((prev) => Math.max(0.2, Number((prev - 0.15).toFixed(2))))}
+        onFitToScreen={handleFitToScreen}
+        onResetZoom={handleResetZoom}
+      />
     </div>
   );
 };

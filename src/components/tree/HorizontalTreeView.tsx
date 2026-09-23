@@ -1,9 +1,10 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { ChevronRight, ChevronLeft, UserX } from 'lucide-react';
 import type { Vendor } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { selectVisibleTree } from '@/store/selectors';
 import { TreeNodeCard } from './TreeNodeCard';
+import { TreeZoomControls } from './TreeZoomControls';
 
 interface HorizontalTreeViewProps {
   onMoveProfile?: (vendor: Vendor) => void;
@@ -27,6 +28,105 @@ export const HorizontalTreeView: React.FC<HorizontalTreeViewProps> = ({
   const statusFilter = useAppStore((s) => s.statusFilter);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
+
+  // Pinch-to-zoom (trackpad/touch) on tree canvas
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = -e.deltaY * 0.003;
+        setZoom((prev) => Math.min(2.0, Math.max(0.2, Number((prev + delta).toFixed(2)))));
+      }
+    };
+
+    let initialDistance = 0;
+    let initialZoom = 1;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        if (t1 && t2) {
+          initialDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+          initialZoom = zoom;
+        }
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && initialDistance > 0) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        if (t1 && t2) {
+          const currentDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+          const factor = currentDistance / initialDistance;
+          setZoom(Math.min(2.0, Math.max(0.2, Number((initialZoom * factor).toFixed(2)))));
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      initialDistance = 0;
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [zoom]);
+
+  const handleFitToScreen = () => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+
+    const contentWidth = content.offsetWidth || content.scrollWidth;
+    const contentHeight = content.offsetHeight || content.scrollHeight;
+
+    const viewportWidth = container.clientWidth - 48;
+    const viewportHeight = container.clientHeight - 48;
+
+    if (contentWidth > 0 && contentHeight > 0) {
+      const scaleX = viewportWidth / contentWidth;
+      const scaleY = viewportHeight / contentHeight;
+      const fitScale = Math.min(scaleX, scaleY, 1.0);
+      const clamped = Math.max(0.2, Number(fitScale.toFixed(2)));
+      setZoom(clamped);
+
+      setTimeout(() => {
+        container.scrollLeft = 0;
+        if (container.scrollHeight > container.clientHeight) {
+          container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+        }
+      }, 50);
+    }
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1.0);
+    setTimeout(() => {
+      const container = containerRef.current;
+      if (container) {
+        container.scrollLeft = 0;
+        if (container.scrollHeight > container.clientHeight) {
+          container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+        }
+      }
+    }, 50);
+  };
 
   // Memoize visible tree reactively based on filters and vendors
   const { matchIds, visibleIds, hasFilter } = useMemo(() => {
@@ -247,15 +347,33 @@ export const HorizontalTreeView: React.FC<HorizontalTreeViewProps> = ({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full overflow-auto p-8 bg-slate-50/60"
-      role="tree"
-      aria-label="Horizontal organization hierarchy tree"
-    >
-      <div className="w-max min-w-full flex items-center p-8 pr-64">
-        {renderBranch(rootNode.id)}
+    <div className="relative w-full h-full overflow-hidden">
+      <div
+        ref={containerRef}
+        className="w-full h-full overflow-auto p-8 bg-slate-50/60"
+        role="tree"
+        aria-label="Horizontal organization hierarchy tree"
+      >
+        <div
+          ref={contentRef}
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: 'left center',
+            transition: 'transform 0.15s ease-out',
+          }}
+          className="w-max min-w-full flex items-center p-8 pr-64"
+        >
+          {renderBranch(rootNode.id)}
+        </div>
       </div>
+
+      <TreeZoomControls
+        zoom={zoom}
+        onZoomIn={() => setZoom((prev) => Math.min(2.0, Number((prev + 0.15).toFixed(2))))}
+        onZoomOut={() => setZoom((prev) => Math.max(0.2, Number((prev - 0.15).toFixed(2))))}
+        onFitToScreen={handleFitToScreen}
+        onResetZoom={handleResetZoom}
+      />
     </div>
   );
 };
