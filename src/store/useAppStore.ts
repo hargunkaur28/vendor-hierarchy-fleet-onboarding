@@ -103,6 +103,18 @@ export interface AppState {
 const initialDb = loadDb();
 const initialChildren = buildChildrenIndex(initialDb.vendors);
 
+const getInitialUser = (): string => {
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    try {
+      const saved = window.sessionStorage.getItem('vendorhub:viewAs');
+      if (saved && initialDb.vendors[saved]) return saved;
+    } catch {
+      // ignore security / storage errors
+    }
+  }
+  return 'admin';
+};
+
 export const useAppStore = create<AppState>()(
   immer((set, get) => ({
     isInitialized: true,
@@ -110,9 +122,16 @@ export const useAppStore = create<AppState>()(
     error: null,
 
     // Session
-    currentUserId: 'admin',
+    currentUserId: getInitialUser(),
     actingOnBehalfOf: null,
     switchUser: (vendorId: string) => {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        try {
+          window.sessionStorage.setItem('vendorhub:viewAs', vendorId);
+        } catch {
+          // ignore
+        }
+      }
       set((state) => {
         state.currentUserId = vendorId;
         // Auto-select self when switching perspective

@@ -30,10 +30,13 @@ export const DelegateDialog: React.FC<DelegateDialogProps> = ({ isOpen, onClose 
     return new Set(getEffectivePermissions(currentUserId, vendorsById));
   }, [currentUserId, vendorsById]);
 
-  // Strict descendants eligible to be delegates
+  // Strict descendants eligible to be delegates (never self)
   const eligibleDelegates = useMemo(() => {
     const descendantIds = getDescendantIds(currentUserId, childrenIndex);
-    return descendantIds.map((id) => vendorsById[id]!).filter(Boolean);
+    return descendantIds
+      .filter((id) => id !== currentUserId)
+      .map((id) => vendorsById[id]!)
+      .filter((v) => Boolean(v) && v.id !== currentUserId);
   }, [currentUserId, childrenIndex, vendorsById]);
 
   const selectedDelegate = selectedDelegateId ? vendorsById[selectedDelegateId] : null;

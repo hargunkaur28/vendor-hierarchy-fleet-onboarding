@@ -275,7 +275,7 @@ describe('Phase 3: Hierarchy Tree & App Shell Components', () => {
       const targetVendor = vendors.find((v) => v.role === 'SITE_ADMIN')!;
       expect(targetVendor).toBeDefined();
 
-      const optionBtn = screen.getByRole('option', { name: new RegExp(targetVendor.name, 'i') });
+      const optionBtn = screen.getAllByRole('option', { name: new RegExp(targetVendor.name, 'i') })[0]!;
       fireEvent.click(optionBtn);
 
       // Perspective should now be switched to targetVendor

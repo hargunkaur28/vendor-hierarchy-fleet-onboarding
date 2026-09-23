@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Shield, Info, AlertTriangle, Check, Lock } from 'lucide-react';
 import type { Vendor, PermissionKey } from '@/types';
 import { ALL_PERMISSIONS, PERMISSION_CONFIG } from '@/config/permissions';
-import { ROLE_CONFIG } from '@/config/roles';
 import { useAppStore } from '@/store/useAppStore';
 import { getEffectivePermissions, findPermissionBlocker } from '@/lib/permissions';
 import { Avatar } from '@/components/common/Avatar';
@@ -16,14 +15,8 @@ export const PermissionMatrix: React.FC = () => {
   const updateGrantedPermissions = useAppStore((s) => s.updateGrantedPermissions);
 
   const currentUser = vendorsById[currentUserId];
-  const [selectedParentId, setSelectedParentId] = useState<string>(currentUserId);
-
-  // If user switched perspective, sync selectedParentId if needed
-  const activeParentId = vendorsById[selectedParentId] ? selectedParentId : currentUserId;
-  const activeParent = vendorsById[activeParentId];
-
-  // Direct sub-vendors under active parent
-  const childIds = childrenIndex[activeParentId] || [];
+  // Direct sub-vendors under current user
+  const childIds = childrenIndex[currentUserId] || [];
   const subVendors = childIds.map((id) => vendorsById[id]!).filter(Boolean);
 
   // Actor's effective permissions (cannot grant what actor doesn't hold)
@@ -65,33 +58,9 @@ export const PermissionMatrix: React.FC = () => {
             <span>Permission Grant Matrix (F4)</span>
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Grant or restrict operational permissions for direct sub-vendors. Ancestor grants clamp effective rights.
+            Grant or restrict operational permissions for direct sub-vendors of {currentUser?.name}. Ancestor grants clamp effective rights.
           </p>
         </div>
-
-        {/* View perspective selector for admin or senior roles with deep branches */}
-        {currentUser?.role === 'ADMIN' && (
-          <div className="flex items-center gap-2">
-            <label htmlFor="perm-parent-select" className="text-xs font-medium text-slate-600 whitespace-nowrap">
-              Parent Vendor:
-            </label>
-            <select
-              id="perm-parent-select"
-              value={activeParentId}
-              onChange={(e) => setSelectedParentId(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 font-medium text-slate-700"
-            >
-              <option value={currentUserId}>{currentUser.name} (Self)</option>
-              {Object.values(vendorsById)
-                .filter((v) => v.id !== currentUserId && (childrenIndex[v.id] || []).length > 0)
-                .map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name} ({ROLE_CONFIG[v.role].label})
-                  </option>
-                ))}
-            </select>
-          </div>
-        )}
       </div>
 
       {/* Empty State */}
@@ -102,7 +71,7 @@ export const PermissionMatrix: React.FC = () => {
           </div>
           <h4 className="text-sm font-semibold text-slate-800">No Direct Sub-Vendors</h4>
           <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-            {activeParent?.name ?? 'This vendor'} currently has no direct team members to grant permissions to.
+            {currentUser?.name ?? 'This vendor'} currently has no direct team members to grant permissions to.
           </p>
         </div>
       ) : (
