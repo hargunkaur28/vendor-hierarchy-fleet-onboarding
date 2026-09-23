@@ -85,3 +85,26 @@
 .node-relocated-pulse {
   animation: nodePulse 2s ease-out;
 }
+
+/* Accessibility: Support prefers-reduced-motion per Section 18 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .node-relocated-pulse {
+    animation: none !important;
+    outline: 2px solid var(--brand) !important;
+  }
+}
+
+/* Focus-visible high-contrast accessibility outline */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}

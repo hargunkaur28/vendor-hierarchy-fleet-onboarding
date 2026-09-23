@@ -114,4 +114,21 @@ When an actor is in "Acting on Behalf" mode (`actingOnBehalfOf !== null`), UI he
 1. **Vehicle Block/Unblock Status:** `VehicleBlockDialog.tsx` created in Phase 6 provides the UI dialog for capturing block reasons. In Phase 7, the F9 requirement is finalized by adding the Section 8.4 Seniority Enforcement check to both `fleetApi.unblockVehicle` and UI unblock buttons: unblocking is strictly restricted to the original blocker or a more senior ancestor (`ROLE_CONFIG[actor.role].rank < ROLE_CONFIG[blocker.role].rank` or ancestor of blocker).
 2. **Vendor Suspension & Reactivation:** F9 covers both Suspend and Reactivate. Suspending requires a reason ($\ge 5$ chars) and renders the subtree non-operational via ancestor check. Reactivation is strictly restricted to the original suspender or a more senior ancestor; less senior peers cannot undo a senior override.
 
+---
+
+## Phase 8: Compact/Horizontal Views, Keyboard Shortcuts, Accessibility & Polish
+
+### A29: Horizontal Tree Connector Geometry
+Per SPEC 4A.7, curved SVG paths (bezier curves) are strictly forbidden app-wide for tree connector branches. `HorizontalTreeView` exclusively implements orthogonal / right-angle connector lines (`w-[1.5px]`, `h-[1.5px]`, and `left-0` vertical bus lines linking siblings from center of first child to center of last child), consistent with Screen 1's vertical tree layout.
+
+### A30: Keyboard Navigation Left/Right Contract
+In strict compliance with lazy-dev discipline and SPEC 4A.7, `ArrowLeft` strictly collapses the selected node (if expanded) and `ArrowRight` strictly expands the selected node (if collapsed). Unrequested horizontal sibling jumping on Left/Right arrow was eliminated.
+
+### A31: Notification Bell Expiry Badge
+Per SPEC 4A.5, the header notification bell is live-wired to `selectExpiringDocuments(store).length`. When expiring documents ($\le 30$ days) are present, a badge pill displays the count. Clicking the bell navigates directly to `/documents?tab=expiries`.
+
+### A32: Accessibility & Reduced Motion
+In `src/index.css`, `@media (prefers-reduced-motion: reduce)` disables all animations, transitions, and pulsing effects across cards, toasts, and dialogs. Prominent `:focus-visible` outlines guarantee accessible keyboard focus management.
+
+
 

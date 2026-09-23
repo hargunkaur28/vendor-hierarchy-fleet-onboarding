@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { UserCheck, ShieldAlert } from 'lucide-react';
@@ -7,10 +7,35 @@ import { PERMISSION_CONFIG } from '@/config/permissions';
 import { getAncestors } from '@/lib/tree';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { KeyboardShortcutsModal } from '@/components/tree/KeyboardShortcutsModal';
 
 export const AppLayout: React.FC = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const location = useLocation();
+
+  // Global '?' keyboard shortcut listener (outside form fields)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.tagName === 'SELECT' ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setIsShortcutsOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const actingOnBehalfOf = useAppStore((s) => s.actingOnBehalfOf);
   const setActingOnBehalfOf = useAppStore((s) => s.setActingOnBehalfOf);
@@ -151,6 +176,12 @@ export const AppLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Global Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+      />
     </div>
   );
 };

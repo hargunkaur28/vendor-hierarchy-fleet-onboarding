@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Menu, Sliders, ChevronDown, Check, UserCheck, Search, X } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { selectExpiringDocuments } from '@/store/selectors';
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   title = 'My Team',
   onToggleSidebar,
 }) => {
+  const navigate = useNavigate();
   const currentUserId = useAppStore((s) => s.currentUserId);
   const switchUser = useAppStore((s) => s.switchUser);
   const vendorsById = useAppStore((s) => s.vendorsById);
@@ -148,16 +150,19 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           ) : null}
 
-          {/* Expiry reminders notification bell */}
+          {/* Expiry reminders notification bell per Section 4A.5 */}
           <button
             type="button"
-            className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-            title={`${expiringCount} expiring documents`}
+            onClick={() => navigate('/documents?tab=expiries')}
+            className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            title={`${expiringCount} expiring documents — click to view reminders`}
             aria-label={`Notifications (${expiringCount} reminders)`}
           >
             <Bell className="w-4 h-4" />
             {expiringCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full" />
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-bold text-white bg-rose-500 rounded-full shadow-xs">
+                {expiringCount > 99 ? '99+' : expiringCount}
+              </span>
             )}
           </button>
 

@@ -4,6 +4,8 @@ import type { Vendor } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { selectVisibleTree } from '@/store/selectors';
 import { TreeNodeCard } from './TreeNodeCard';
+import { HorizontalTreeView } from './HorizontalTreeView';
+import { CompactTreeView } from './CompactTreeView';
 
 interface HierarchyTreeProps {
   onMoveProfile?: (vendor: Vendor) => void;
@@ -23,6 +25,7 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
   const selectedVendorId = useAppStore((s) => s.selectedVendorId);
   const setSelectedVendorId = useAppStore((s) => s.setSelectedVendorId);
   const isLoading = useAppStore((s) => s.isLoading);
+  const viewMode = useAppStore((s) => s.viewMode);
 
   const searchFilters = useAppStore((s) => s.searchFilters);
   const statusFilter = useAppStore((s) => s.statusFilter);
@@ -127,20 +130,6 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
     const hasChildren = children.length > 0;
     const isExpanded = expandedIds.has(vendorId);
 
-    // Siblings under the same parent
-    const siblings = parentId
-      ? (childrenIndex[parentId] || []).filter(
-          (id) => !hasFilter || visibleIds.has(id),
-        )
-      : [];
-    const currentIndex = siblings.indexOf(vendorId);
-    const nextSiblingId =
-      currentIndex >= 0 && currentIndex < siblings.length - 1
-        ? siblings[currentIndex + 1]
-        : null;
-    const prevSiblingId =
-      currentIndex > 0 ? siblings[currentIndex - 1] : null;
-
     const focusNode = (targetId: string) => {
       const targetEl = document.getElementById(`node-${targetId}`);
       const container = containerRef.current;
@@ -210,29 +199,17 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
       }
       case 'ArrowRight': {
         e.preventDefault();
-        // If node has children and is collapsed, expand it
+        // SPEC: Right = expand
         if (hasChildren && !isExpanded) {
           toggleExpanded(vendorId);
-        } else if (nextSiblingId) {
-          // Move to next sibling if available
-          focusNode(nextSiblingId);
-        } else if (hasChildren && isExpanded && children[0]) {
-          // If already expanded and no next sibling, move down to first child
-          focusNode(children[0]);
         }
         break;
       }
       case 'ArrowLeft': {
         e.preventDefault();
-        // If node has children and is expanded, collapse it
+        // SPEC: Left = collapse
         if (hasChildren && isExpanded) {
           toggleExpanded(vendorId);
-        } else if (prevSiblingId) {
-          // Move to previous sibling if available
-          focusNode(prevSiblingId);
-        } else if (parentId) {
-          // Otherwise move to parent
-          focusNode(parentId);
         }
         break;
       }
@@ -367,6 +344,26 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
         <h4 className="text-sm font-semibold text-slate-700">No matching team members</h4>
         <p className="text-xs text-slate-400 mt-0.5">Try adjusting your search query or tags filter.</p>
       </div>
+    );
+  }
+
+  if (viewMode === 'compact') {
+    return (
+      <CompactTreeView
+        onMoveProfile={onMoveProfile}
+        onEditVendor={onEditVendor}
+        pulsingVendorId={pulsingVendorId}
+      />
+    );
+  }
+
+  if (viewMode === 'horizontal') {
+    return (
+      <HorizontalTreeView
+        onMoveProfile={onMoveProfile}
+        onEditVendor={onEditVendor}
+        pulsingVendorId={pulsingVendorId}
+      />
     );
   }
 

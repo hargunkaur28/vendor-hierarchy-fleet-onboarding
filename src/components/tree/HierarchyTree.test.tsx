@@ -180,45 +180,6 @@ describe('Phase 3: Hierarchy Tree & App Shell Components', () => {
       expect(useAppStore.getState().selectedVendorId).toBe(firstChildId);
     });
 
-    it('navigates across siblings with ArrowRight and ArrowLeft', async () => {
-      render(
-        <MemoryRouter>
-          <HierarchyTree />
-        </MemoryRouter>,
-      );
-
-      const children = useAppStore.getState().childrenIndex['admin'] || [];
-      expect(children.length).toBeGreaterThanOrEqual(2);
-
-      const firstSiblingId = children[0]!;
-      const secondSiblingId = children[1]!;
-
-      const firstSiblingEl = document.getElementById(`node-${firstSiblingId}`)!;
-      firstSiblingEl.focus();
-      expect(document.activeElement).toBe(firstSiblingEl);
-
-      // Ensure it is collapsed so ArrowRight moves to next sibling instead of collapsing
-      if (useAppStore.getState().expandedIds.has(firstSiblingId)) {
-        useAppStore.getState().toggleExpanded(firstSiblingId);
-      }
-      expect(useAppStore.getState().expandedIds.has(firstSiblingId)).toBe(false);
-
-      // If it has children and collapsed: first ArrowRight expands it
-      fireEvent.keyDown(firstSiblingEl, { key: 'ArrowRight', code: 'ArrowRight' });
-      expect(useAppStore.getState().expandedIds.has(firstSiblingId)).toBe(true);
-
-      // Next ArrowRight with siblings moves to next sibling
-      fireEvent.keyDown(firstSiblingEl, { key: 'ArrowRight', code: 'ArrowRight' });
-      const secondSiblingEl = document.getElementById(`node-${secondSiblingId}`);
-      expect(document.activeElement).toBe(secondSiblingEl);
-      expect(useAppStore.getState().selectedVendorId).toBe(secondSiblingId);
-
-      // ArrowLeft moves back to previous sibling
-      fireEvent.keyDown(secondSiblingEl!, { key: 'ArrowLeft', code: 'ArrowLeft' });
-      expect(document.activeElement).toBe(firstSiblingEl);
-      expect(useAppStore.getState().selectedVendorId).toBe(firstSiblingId);
-    });
-
     it('selects vendor when pressing Enter or Space', async () => {
       render(
         <MemoryRouter>

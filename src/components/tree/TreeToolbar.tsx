@@ -3,8 +3,17 @@ import { Search, ChevronDown, Keyboard, Check, X } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { RoleLegend } from './RoleLegend';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
+import { ROLE_CONFIG } from '@/config/roles';
+import type { RoleKey } from '@/types';
 
 const AVAILABLE_TAGS = ['North', 'South', 'East', 'West', 'Airport', 'Fleet', 'Premium', 'Electric'];
+const ALL_ROLES: RoleKey[] = [
+  'ADMIN',
+  'SITE_ADMIN',
+  'GROUP_VENDOR',
+  'SUB_VENDOR',
+  'DEPLOYMENT_ASSOCIATE',
+];
 
 export const TreeToolbar: React.FC = () => {
   const searchFilters = useAppStore((s) => s.searchFilters);
@@ -24,9 +33,11 @@ export const TreeToolbar: React.FC = () => {
   }
 
   const [isTagsOpen, setIsTagsOpen] = useState(false);
+  const [isRolesOpen, setIsRolesOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const tagsDropdownRef = useRef<HTMLDivElement>(null);
+  const rolesDropdownRef = useRef<HTMLDivElement>(null);
 
   // Global '/' shortcut to focus search input
   useEffect(() => {
@@ -41,11 +52,14 @@ export const TreeToolbar: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Close tags dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (tagsDropdownRef.current && !tagsDropdownRef.current.contains(e.target as Node)) {
         setIsTagsOpen(false);
+      }
+      if (rolesDropdownRef.current && !rolesDropdownRef.current.contains(e.target as Node)) {
+        setIsRolesOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -95,6 +109,14 @@ export const TreeToolbar: React.FC = () => {
       ? current.filter((t) => t !== tag)
       : [...current, tag];
     setSearchFilters({ tags: updated });
+  };
+
+  const handleRoleToggle = (role: RoleKey) => {
+    const current = searchFilters.roles || [];
+    const updated = current.includes(role)
+      ? current.filter((r) => r !== role)
+      : [...current, role];
+    setSearchFilters({ roles: updated });
   };
 
   return (
@@ -183,6 +205,73 @@ export const TreeToolbar: React.FC = () => {
                     className="text-[11px] text-indigo-600 hover:underline px-2 py-0.5"
                   >
                     Clear tags
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Select Roles Multi-Select Dropdown */}
+        <div className="relative" ref={rolesDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsRolesOpen(!isRolesOpen)}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-normal text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+            aria-expanded={isRolesOpen}
+            aria-haspopup="listbox"
+          >
+            <span>
+              {searchFilters.roles.length > 0
+                ? `${searchFilters.roles.length} role${searchFilters.roles.length > 1 ? 's' : ''} selected`
+                : 'Select Roles'}
+            </span>
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          </button>
+
+          {isRolesOpen && (
+            <div
+              className="absolute left-0 top-full mt-1.5 w-56 bg-white border border-slate-200 rounded-lg shadow-lg z-30 p-1.5"
+              role="listbox"
+              aria-label="Filter by roles"
+            >
+              <div className="space-y-0.5 max-h-56 overflow-y-auto">
+                {ALL_ROLES.map((role) => {
+                  const isSelected = searchFilters.roles.includes(role);
+                  const config = ROLE_CONFIG[role];
+                  return (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => handleRoleToggle(role)}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-md text-left transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-50 text-indigo-700 font-medium'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                      role="option"
+                      aria-selected={isSelected}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: config.colorHex }}
+                        />
+                        <span>{config.label}</span>
+                      </div>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600" />}
+                    </button>
+                  );
+                })}
+              </div>
+              {searchFilters.roles.length > 0 && (
+                <div className="pt-1.5 mt-1 border-t border-slate-100 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setSearchFilters({ roles: [] })}
+                    className="text-[11px] text-indigo-600 hover:underline px-2 py-0.5 cursor-pointer"
+                  >
+                    Clear roles
                   </button>
                 </div>
               )}
