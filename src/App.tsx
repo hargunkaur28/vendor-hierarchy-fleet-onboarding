@@ -3,13 +3,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { TeamPage } from '@/pages/TeamPage';
-import {
-  DashboardPage,
-  VehiclesPage,
-  DriversPage,
-  DocumentsPage,
-  AuditPage,
-} from '@/pages/Placeholders';
+import { DashboardPage, AuditPage } from '@/pages/Placeholders';
+import { VehiclesPage } from '@/pages/VehiclesPage';
+import { DriversPage } from '@/pages/DriversPage';
+import { DocumentsPage } from '@/pages/DocumentsPage';
 import { DelegationPage } from '@/pages/DelegationPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 

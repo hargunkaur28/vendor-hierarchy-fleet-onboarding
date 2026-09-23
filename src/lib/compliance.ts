@@ -120,8 +120,8 @@ export function getEffectiveVehicleStatus(
   now: Date = new Date(),
 ): 'OPERATIONAL' | 'NON_COMPLIANT' | 'BLOCKED' | 'INACTIVE' {
   if (vehicle.blocked) return 'BLOCKED';
-  if (vehicle.status === 'INACTIVE') return 'INACTIVE';
   const { compliant } = isVehicleCompliant(vehicle, now);
   if (!compliant) return 'NON_COMPLIANT';
-  return 'OPERATIONAL';
+  if (vehicle.status === 'ACTIVE') return 'OPERATIONAL';
+  return 'INACTIVE';
 }

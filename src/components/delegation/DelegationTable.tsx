@@ -31,14 +31,15 @@ export const DelegationTable: React.FC<DelegationTableProps> = ({ onOpenCreate }
   const actingOnBehalfOf = useAppStore((s) => s.actingOnBehalfOf);
   const setActingOnBehalfOf = useAppStore((s) => s.setActingOnBehalfOf);
 
-  const currentUser = vendorsById[currentUserId];
+  const effectiveVendorId = actingOnBehalfOf || currentUserId;
+  const effectiveVendor = vendorsById[effectiveVendorId];
 
   const [editingDelegation, setEditingDelegation] = useState<Delegation | null>(null);
   const [revokingDelegation, setRevokingDelegation] = useState<Delegation | null>(null);
 
-  // Delegations created by the current user
+  // Delegations created by the current user or acted-as delegator
   const delegationsCreated = Object.values(delegationsById).filter(
-    (d) => d.delegatorId === currentUserId,
+    (d) => d.delegatorId === effectiveVendorId,
   );
 
   // Delegations granted to the current user by senior vendors
@@ -187,7 +188,13 @@ export const DelegationTable: React.FC<DelegationTableProps> = ({ onOpenCreate }
               <span>Delegated Authority Roster</span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Active and disabled delegations issued by {currentUser?.name}.
+              {actingOnBehalfOf ? (
+                <span>
+                  Active and disabled delegations issued by <strong className="text-slate-700">{effectiveVendor?.name}</strong> (acting authority).
+                </span>
+              ) : (
+                <span>Active and disabled delegations issued by {effectiveVendor?.name}.</span>
+              )}
             </p>
           </div>
 

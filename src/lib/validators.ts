@@ -85,3 +85,32 @@ export const vendorNameSchema = z
   .string()
   .min(2, 'Name must be at least 2 characters')
   .max(100, 'Name must be under 100 characters');
+
+import type { Resolver, FieldValues, FieldErrors } from 'react-hook-form';
+
+/**
+ * Lightweight Zod resolver for react-hook-form without external packages.
+ * // ponytail: native zod validation handles react-hook-form in 15 lines without @hookform/resolvers
+ */
+export function zodResolver<T extends FieldValues>(schema: z.ZodType<T>): Resolver<T> {
+  return async (values) => {
+    const result = schema.safeParse(values);
+    if (result.success) {
+      return { values: result.data, errors: {} };
+    }
+    const errors: FieldErrors<T> = {};
+    for (const issue of result.error.issues) {
+      const field = String(issue.path[0]);
+      if (field && !(field in errors)) {
+        Object.assign(errors, {
+          [field]: {
+            type: issue.code,
+            message: issue.message,
+          },
+        });
+      }
+    }
+    return { values: {}, errors };
+  };
+}
+

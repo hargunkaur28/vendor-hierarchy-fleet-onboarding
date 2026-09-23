@@ -92,3 +92,16 @@ If a user receives active delegations from multiple delegators, the top navbar p
 ### A23: Permission Matrix Ancestor Walk for Blocking Tooltip
 When a permission is directly granted to a vendor (`vendor.grantedPermissions.includes(perm)`) but blocked by an ancestor (`!effectivePermissions.includes(perm)`), the matrix uses `findPermissionBlocker(vendor.id, perm, vendorsById)` to identify the first ancestor up the hierarchy whose granted set lacks that permission, displaying `"Blocked by {ancestor.name}"` in a tooltip with a striped/grey visual indicator.
 
+---
+
+## Phase 6: Fleet, Drivers & Document Compliance (F6, F7)
+
+### A24: Live Operational Status Derivation (Auto-deactivated on Read)
+Per Section 14 F7, the operational badge and effective operational state on `/vehicles` are derived live on each render using `isVehicleCompliant(vehicle, now)`. Even if `vehicle.status === 'ACTIVE'` in persistent storage, if any required document (`RC`, `PERMIT`, `PUC`, `INSURANCE`) is expired, missing, or rejected, the effective status immediately derives to `NON_COMPLIANT` with specific failure reasons, and the status toggle is disabled. If `vehicle.blocked` is present, it derives to `BLOCKED`. A vehicle is only `OPERATIONAL` when `compliant && !blocked && status === 'ACTIVE'`.
+
+### A25: FuelType Domain Schema
+FuelType strictly adheres to the domain union `'PETROL' | 'DIESEL' | 'CNG' | 'EV' | 'HYBRID'` established in Phase 1 (using `EV` for electric vehicles).
+
+### A26: Acting on Behalf Delegation Attribution
+When an actor is in "Acting on Behalf" mode (`actingOnBehalfOf !== null`), UI headers and cards in delegation and fleet views attribute actions to the delegator's identity, and audit logs record the acting attribution.
+
