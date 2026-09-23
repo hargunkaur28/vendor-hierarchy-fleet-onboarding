@@ -1,8 +1,10 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { ChevronUp, ChevronDown, UserX } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Vendor } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { selectVisibleTree } from '@/store/selectors';
+import { ROLE_CONFIG } from '@/config/roles';
 import { TreeNodeCard } from './TreeNodeCard';
 import { HorizontalTreeView } from './HorizontalTreeView';
 import { CompactTreeView } from './CompactTreeView';
@@ -10,13 +12,11 @@ import { TreeZoomControls } from './TreeZoomControls';
 
 interface HierarchyTreeProps {
   onMoveProfile?: (vendor: Vendor) => void;
-  onEditVendor?: (vendor: Vendor) => void;
   pulsingVendorId?: string | null;
 }
 
 export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
   onMoveProfile,
-  onEditVendor,
   pulsingVendorId,
 }) => {
   const vendorsById = useAppStore((s) => s.vendorsById);
@@ -221,16 +221,70 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
     }
   }, [selectedVendorId]);
 
+  // Canvas/window keyboard listener for navigation and m/M shortcut
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      if (
+        active?.tagName === 'INPUT' ||
+        active?.tagName === 'TEXTAREA' ||
+        active?.closest('[role="dialog"]')
+      ) {
+        return;
+      }
+
+      const currentId = selectedVendorId || rootNode?.id;
+      if (!currentId) return;
+
+      const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+      if (arrowKeys.includes(e.key)) {
+        const currentCard = document.getElementById(`node-${currentId}`);
+        // If focus is not already on a tree node card, focus it so the keyboard event targets it
+        if (currentCard && !active?.closest('[role="treeitem"]')) {
+          currentCard.focus();
+        }
+      } else if (e.key === 'm' || e.key === 'M') {
+        const vendor = vendorsById[currentId];
+        if (vendor) {
+          e.preventDefault();
+          const roleConfig = ROLE_CONFIG[vendor.role];
+          if (roleConfig?.movable && onMoveProfile) {
+            onMoveProfile(vendor);
+          } else {
+            toast.info(`${vendor.name} (${roleConfig?.label ?? vendor.role}) cannot be moved.`);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [selectedVendorId, rootNode, vendorsById, onMoveProfile]);
+
   // Keyboard navigation handler for tree nodes
   const handleNodeKeyDown = (
     e: React.KeyboardEvent,
     vendorId: string,
     parentId: string | null,
   ) => {
+    const vendor = vendorsById[vendorId];
+    if (!vendor) return;
+
     const rawChildren = childrenIndex[vendorId] || [];
     const children = rawChildren.filter((id) => !hasFilter || visibleIds.has(id));
     const hasChildren = children.length > 0;
     const isExpanded = expandedIds.has(vendorId);
+
+    // Siblings under the same parent
+    const siblings = parentId
+      ? (childrenIndex[parentId] || []).filter((id) => !hasFilter || visibleIds.has(id))
+      : [vendorId];
+    const siblingIndex = siblings.indexOf(vendorId);
+    const prevSibling = siblingIndex > 0 ? siblings[siblingIndex - 1] : null;
+    const nextSibling =
+      siblingIndex !== -1 && siblingIndex < siblings.length - 1
+        ? siblings[siblingIndex + 1]
+        : null;
 
     const focusNode = (targetId: string) => {
       const targetEl = document.getElementById(`node-${targetId}`);
@@ -280,11 +334,13 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
     switch (e.key) {
       case 'ArrowDown': {
         e.preventDefault();
-        // Down moves to child tier
-        if (hasChildren) {
-          if (!isExpanded) {
-            toggleExpanded(vendorId);
-          }
+        // Down moves to child tier if expanded; otherwise next sibling
+        if (hasChildren && isExpanded && children[0]) {
+          focusNode(children[0]);
+        } else if (nextSibling) {
+          focusNode(nextSibling);
+        } else if (hasChildren && !isExpanded) {
+          toggleExpanded(vendorId);
           if (children[0]) {
             focusNode(children[0]);
           }
@@ -293,25 +349,50 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
       }
       case 'ArrowUp': {
         e.preventDefault();
-        // Up moves to parent tier
+        // Up moves to parent tier if present; otherwise prev sibling
         if (parentId) {
           focusNode(parentId);
+        } else if (prevSibling) {
+          focusNode(prevSibling);
         }
         break;
       }
       case 'ArrowRight': {
         e.preventDefault();
-        // Right = expand
-        if (hasChildren && !isExpanded) {
+        // If node has a next sibling, move to next sibling.
+        // Otherwise, if collapsed with children, expand.
+        // If already expanded with children, go to first child.
+        if (nextSibling) {
+          focusNode(nextSibling);
+        } else if (hasChildren && !isExpanded) {
           toggleExpanded(vendorId);
+        } else if (hasChildren && isExpanded && children[0]) {
+          focusNode(children[0]);
         }
         break;
       }
       case 'ArrowLeft': {
         e.preventDefault();
-        // Left = collapse
-        if (hasChildren && isExpanded) {
+        // If prevSibling exists, move to prev sibling.
+        // Otherwise, if expanded, collapse.
+        // If already collapsed, move to parent tier.
+        if (prevSibling) {
+          focusNode(prevSibling);
+        } else if (hasChildren && isExpanded) {
           toggleExpanded(vendorId);
+        } else if (parentId) {
+          focusNode(parentId);
+        }
+        break;
+      }
+      case 'm':
+      case 'M': {
+        e.preventDefault();
+        const roleConfig = ROLE_CONFIG[vendor.role];
+        if (roleConfig?.movable && onMoveProfile) {
+          onMoveProfile(vendor);
+        } else {
+          toast.info(`${vendor.name} (${roleConfig?.label ?? vendor.role}) cannot be moved.`);
         }
         break;
       }
@@ -351,7 +432,6 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
           isPulsing={pulsingVendorId === vendorId}
           onSelect={() => setSelectedVendorId(vendorId)}
           onMoveProfile={onMoveProfile ? () => onMoveProfile(vendor) : undefined}
-          onEdit={onEditVendor ? () => onEditVendor(vendor) : undefined}
           onKeyDown={(e) => handleNodeKeyDown(e, vendorId, vendor.parentId)}
         />
 
@@ -453,7 +533,6 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
     return (
       <CompactTreeView
         onMoveProfile={onMoveProfile}
-        onEditVendor={onEditVendor}
         pulsingVendorId={pulsingVendorId}
       />
     );
@@ -463,7 +542,6 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
     return (
       <HorizontalTreeView
         onMoveProfile={onMoveProfile}
-        onEditVendor={onEditVendor}
         pulsingVendorId={pulsingVendorId}
       />
     );

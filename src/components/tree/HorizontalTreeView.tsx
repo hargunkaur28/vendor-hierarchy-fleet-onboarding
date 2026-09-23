@@ -1,20 +1,20 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { ChevronRight, ChevronLeft, UserX } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Vendor } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { selectVisibleTree } from '@/store/selectors';
+import { ROLE_CONFIG } from '@/config/roles';
 import { TreeNodeCard } from './TreeNodeCard';
 import { TreeZoomControls } from './TreeZoomControls';
 
 interface HorizontalTreeViewProps {
   onMoveProfile?: (vendor: Vendor) => void;
-  onEditVendor?: (vendor: Vendor) => void;
   pulsingVendorId?: string | null;
 }
 
 export const HorizontalTreeView: React.FC<HorizontalTreeViewProps> = ({
   onMoveProfile,
-  onEditVendor,
   pulsingVendorId,
 }) => {
   const vendorsById = useAppStore((s) => s.vendorsById);
@@ -157,11 +157,53 @@ export const HorizontalTreeView: React.FC<HorizontalTreeViewProps> = ({
     }
   }, [hasFilter, matchIds]);
 
+  // Canvas/window keyboard listener for navigation and m/M shortcut
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      if (
+        active?.tagName === 'INPUT' ||
+        active?.tagName === 'TEXTAREA' ||
+        active?.closest('[role="dialog"]')
+      ) {
+        return;
+      }
+
+      const currentId = selectedVendorId || rootNode?.id;
+      if (!currentId) return;
+
+      const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+      if (arrowKeys.includes(e.key)) {
+        const currentCard = document.getElementById(`horiz-node-${currentId}`);
+        if (currentCard && !active?.closest('[role="treeitem"]')) {
+          currentCard.focus();
+        }
+      } else if (e.key === 'm' || e.key === 'M') {
+        const vendor = vendorsById[currentId];
+        if (vendor) {
+          e.preventDefault();
+          const roleConfig = ROLE_CONFIG[vendor.role];
+          if (roleConfig?.movable && onMoveProfile) {
+            onMoveProfile(vendor);
+          } else {
+            toast.info(`${vendor.name} (${roleConfig?.label ?? vendor.role}) cannot be moved.`);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [selectedVendorId, rootNode, vendorsById, onMoveProfile]);
+
   const handleKeyDown = (
     e: React.KeyboardEvent,
     vendorId: string,
     parentId: string | null,
   ) => {
+    const vendor = vendorsById[vendorId];
+    if (!vendor) return;
+
     const rawChildren = childrenIndex[vendorId] || [];
     const children = rawChildren.filter((id) => !hasFilter || visibleIds.has(id));
     const hasChildren = children.length > 0;
@@ -190,17 +232,28 @@ export const HorizontalTreeView: React.FC<HorizontalTreeViewProps> = ({
     switch (e.key) {
       case 'ArrowRight': {
         e.preventDefault();
-        // Right = expand
+        // If collapsed with children: expand.
+        // If expanded with children: focus first child.
+        // Otherwise try next sibling.
         if (hasChildren && !isExpanded) {
           toggleExpanded(vendorId);
+        } else if (hasChildren && isExpanded && children[0]) {
+          focusNode(children[0]);
+        } else if (nextSiblingId) {
+          focusNode(nextSiblingId);
         }
         break;
       }
       case 'ArrowLeft': {
         e.preventDefault();
-        // Left = collapse
+        // If expanded with children: collapse.
+        // Otherwise navigate to parent tier!
         if (hasChildren && isExpanded) {
           toggleExpanded(vendorId);
+        } else if (parentId) {
+          focusNode(parentId);
+        } else if (prevSiblingId) {
+          focusNode(prevSiblingId);
         }
         break;
       }
@@ -208,6 +261,8 @@ export const HorizontalTreeView: React.FC<HorizontalTreeViewProps> = ({
         e.preventDefault();
         if (nextSiblingId) {
           focusNode(nextSiblingId);
+        } else if (hasChildren && isExpanded && children[0]) {
+          focusNode(children[0]);
         }
         break;
       }
@@ -215,6 +270,19 @@ export const HorizontalTreeView: React.FC<HorizontalTreeViewProps> = ({
         e.preventDefault();
         if (prevSiblingId) {
           focusNode(prevSiblingId);
+        } else if (parentId) {
+          focusNode(parentId);
+        }
+        break;
+      }
+      case 'm':
+      case 'M': {
+        e.preventDefault();
+        const roleConfig = ROLE_CONFIG[vendor.role];
+        if (roleConfig?.movable && onMoveProfile) {
+          onMoveProfile(vendor);
+        } else {
+          toast.info(`${vendor.name} (${roleConfig?.label ?? vendor.role}) cannot be moved.`);
         }
         break;
       }
@@ -254,7 +322,6 @@ export const HorizontalTreeView: React.FC<HorizontalTreeViewProps> = ({
           isPulsing={pulsingVendorId === vendorId}
           onSelect={() => setSelectedVendorId(vendorId)}
           onMoveProfile={onMoveProfile ? () => onMoveProfile(vendor) : undefined}
-          onEdit={onEditVendor ? () => onEditVendor(vendor) : undefined}
           onKeyDown={(e) => handleKeyDown(e, vendorId, vendor.parentId)}
         />
 

@@ -18,7 +18,6 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
     { key: '←', desc: 'Collapse selected node' },
     { key: 'Enter / Space', desc: 'Select focused vendor node' },
     { key: 'm / M', desc: 'Open Move Profile dialog (for movable roles)' },
-    { key: 'e / E', desc: 'Open Edit Vendor dialog' },
     { key: '/', desc: 'Focus tree search filter' },
     { key: 'Esc', desc: 'Clear search filter or close open dialogs' },
     { key: '?', desc: 'Toggle this keyboard shortcuts dialog' },

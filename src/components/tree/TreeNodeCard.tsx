@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pencil, ArrowRightLeft } from 'lucide-react';
+import { ArrowRightLeft } from 'lucide-react';
 import type { Vendor } from '@/types';
 import { ROLE_CONFIG } from '@/config/roles';
 import { Avatar } from '@/components/common/Avatar';
@@ -13,7 +13,6 @@ interface TreeNodeCardProps {
   isPulsing?: boolean;
   onSelect?: () => void;
   onMoveProfile?: () => void;
-  onEdit?: () => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
@@ -25,7 +24,6 @@ export const TreeNodeCard: React.FC<TreeNodeCardProps> = React.memo(({
   isPulsing = false,
   onSelect,
   onMoveProfile,
-  onEdit,
   onKeyDown,
 }) => {
   const roleConfig = ROLE_CONFIG[vendor.role];
@@ -85,39 +83,23 @@ export const TreeNodeCard: React.FC<TreeNodeCardProps> = React.memo(({
             : 'border border-slate-200 hover:border-slate-300'
       }`}
     >
-      {/* Top row: Avatar + Name + Edit Pencil */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <Avatar name={vendor.name} role={vendor.role} size="md" />
-          <div className="min-w-0">
-            <h4
-              className="text-xs font-semibold text-slate-900 truncate leading-tight"
-              title={vendor.name}
-            >
-              {renderHighlighted(vendor.name)}
-            </h4>
-            <p
-              className="text-[11px] text-slate-500 truncate leading-normal"
-              title={vendor.email}
-            >
-              {renderHighlighted(vendor.email)}
-            </p>
-          </div>
+      {/* Top row: Avatar + Name & Email */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        <Avatar name={vendor.name} role={vendor.role} size="md" />
+        <div className="min-w-0 flex-1">
+          <h4
+            className="text-xs font-semibold text-slate-900 truncate leading-tight"
+            title={vendor.name}
+          >
+            {renderHighlighted(vendor.name)}
+          </h4>
+          <p
+            className="text-[11px] text-slate-500 truncate leading-normal"
+            title={vendor.email}
+          >
+            {renderHighlighted(vendor.email)}
+          </p>
         </div>
-
-        {/* Edit Pencil Icon */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit?.();
-          }}
-          className="text-slate-400 hover:text-indigo-600 p-0.5 rounded transition-colors shrink-0"
-          title="Edit Profile"
-          aria-label={`Edit ${vendor.name}`}
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
       </div>
 
       {/* Move Profile button for movable roles */}

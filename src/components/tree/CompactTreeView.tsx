@@ -3,7 +3,6 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   ChevronRight,
   ChevronDown,
-  Pencil,
   ArrowRightLeft,
   UserX,
 } from 'lucide-react';
@@ -15,7 +14,6 @@ import { Avatar } from '@/components/common/Avatar';
 
 interface CompactTreeViewProps {
   onMoveProfile?: (vendor: Vendor) => void;
-  onEditVendor?: (vendor: Vendor) => void;
   pulsingVendorId?: string | null;
 }
 
@@ -30,7 +28,6 @@ interface FlatTreeNode {
 
 export const CompactTreeView: React.FC<CompactTreeViewProps> = ({
   onMoveProfile,
-  onEditVendor,
   pulsingVendorId,
 }) => {
   const vendorsById = useAppStore((s) => s.vendorsById);
@@ -206,14 +203,6 @@ export const CompactTreeView: React.FC<CompactTreeViewProps> = ({
         }
         break;
       }
-      case 'e':
-      case 'E': {
-        if (onEditVendor) {
-          e.preventDefault();
-          onEditVendor(vendor);
-        }
-        break;
-      }
     }
   };
 
@@ -386,20 +375,6 @@ export const CompactTreeView: React.FC<CompactTreeViewProps> = ({
                       aria-label={`Move ${vendor.name}`}
                     >
                       <ArrowRightLeft className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  {onEditVendor && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditVendor(vendor);
-                      }}
-                      className="p-1 rounded text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer"
-                      title={`Edit ${vendor.name}`}
-                      aria-label={`Edit ${vendor.name}`}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>

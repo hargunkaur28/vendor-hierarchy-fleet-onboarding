@@ -1,7 +1,6 @@
 # Enterprise Vendor Hierarchy Management & Fleet Onboarding Platform
 
 [![CI](https://github.com/hargunkaur28/vendor-hierarchy-fleet-onboarding/actions/workflows/ci.yml/badge.svg)](https://github.com/hargunkaur28/vendor-hierarchy-fleet-onboarding/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript: Strict](https://img.shields.io/badge/TypeScript-Strict_Mode-blue.svg)](tsconfig.json)
 [![Tests: 192 Passed](https://img.shields.io/badge/Tests-192_Passed-brightgreen.svg)](src/)
 
@@ -212,9 +211,3 @@ This codebase was developed in pair-programming collaboration with an advanced A
 - **Discipline Rungs**: Stop at the first rung that holds: reuse existing helpers, standard libraries, and native platform features before writing new code.
 - **Strict Verification**: Every single line of code was verified against TypeScript strict mode, ESLint (`--max-warnings 0`), and 18 test suites containing 192 unit and component tests.
 - **Zero-Unrequested Features**: Strict adherence to system requirements (e.g. maintaining pure Left = collapse, Right = expand keyboard tree navigation semantics).
-
----
-
-## 11. License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -202,6 +202,67 @@ describe('Phase 3: Hierarchy Tree & App Shell Components', () => {
       });
 
       expect(useAppStore.getState().selectedVendorId).toBe(targetChildId);
+    });
+
+    it('navigates between sibling nodes with ArrowRight and ArrowLeft', async () => {
+      render(
+        <MemoryRouter>
+          <HierarchyTree />
+        </MemoryRouter>,
+      );
+
+      const children = useAppStore.getState().childrenIndex['admin'] || [];
+      expect(children.length).toBeGreaterThan(1);
+      const [firstSiblingId, secondSiblingId] = children;
+      const firstEl = document.getElementById(`node-${firstSiblingId}`)!;
+      const secondEl = document.getElementById(`node-${secondSiblingId}`)!;
+
+      firstEl.focus();
+      expect(document.activeElement).toBe(firstEl);
+
+      // ArrowRight navigates to next sibling
+      fireEvent.keyDown(firstEl, { key: 'ArrowRight', code: 'ArrowRight' });
+      expect(document.activeElement).toBe(secondEl);
+      expect(useAppStore.getState().selectedVendorId).toBe(secondSiblingId);
+
+      // ArrowLeft navigates back to previous sibling
+      fireEvent.keyDown(secondEl, { key: 'ArrowLeft', code: 'ArrowLeft' });
+      expect(document.activeElement).toBe(firstEl);
+      expect(useAppStore.getState().selectedVendorId).toBe(firstSiblingId);
+    });
+
+    it('triggers onMoveProfile when pressing m or M on a movable vendor', async () => {
+      const handleMoveProfile = vi.fn();
+      // Expand sa-site-admin so its children (Group Vendors) are rendered
+      useAppStore.getState().toggleExpanded('sa-site-admin');
+
+      render(
+        <MemoryRouter>
+          <HierarchyTree onMoveProfile={handleMoveProfile} />
+        </MemoryRouter>,
+      );
+
+      const gvChildren = useAppStore.getState().childrenIndex['sa-site-admin'] || [];
+      const movableVendorId = gvChildren[0]!;
+      const movableVendor = useAppStore.getState().vendorsById[movableVendorId]!;
+      const cardEl = document.getElementById(`node-${movableVendorId}`)!;
+      expect(cardEl).toBeInTheDocument();
+
+      cardEl.focus();
+      fireEvent.keyDown(cardEl, { key: 'm', code: 'KeyM' });
+
+      expect(handleMoveProfile).toHaveBeenCalledWith(movableVendor);
+    });
+
+    it('does not render any pencil button on node cards', () => {
+      render(
+        <MemoryRouter>
+          <HierarchyTree />
+        </MemoryRouter>,
+      );
+
+      const pencilButtons = screen.queryAllByRole('button', { name: /edit/i });
+      expect(pencilButtons.length).toBe(0);
     });
   });
 
