@@ -23,5 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 
-# Internal review files
+# Internal review & specification files
 ponytail.md
+SPEC.md
+spec.md
+*plan*.md
+*Plan*.md

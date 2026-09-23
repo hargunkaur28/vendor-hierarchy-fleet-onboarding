@@ -301,7 +301,7 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
       }
       case 'ArrowRight': {
         e.preventDefault();
-        // SPEC: Right = expand
+        // Right = expand
         if (hasChildren && !isExpanded) {
           toggleExpanded(vendorId);
         }
@@ -309,7 +309,7 @@ export const HierarchyTree: React.FC<HierarchyTreeProps> = ({
       }
       case 'ArrowLeft': {
         e.preventDefault();
-        // SPEC: Left = collapse
+        // Left = collapse
         if (hasChildren && isExpanded) {
           toggleExpanded(vendorId);
         }

@@ -15,16 +15,16 @@ A high-performance, enterprise-grade frontend platform for corporate commute and
 
 ---
 
-## 1. Feature Checklist
+## 1. Feature Checklist (Mapped to [CASE_STUDY_BRIEF.md](CASE_STUDY_BRIEF.md))
 
 | Section | Feature Area | Status | Key Deliverables & Highlights |
 | :--- | :--- | :---: | :--- |
-| **I** | **Multi-Tier Organization Hierarchy** | ✅ | 5-tier strict ranking (`ADMIN` → `SITE_ADMIN` → `GROUP_VENDOR` → `SUB_VENDOR` → `DEPLOYMENT_ASSOCIATE`). Unbounded `SUB_VENDOR` depth. Vertical tree, horizontal tree (strictly orthogonal connectors per SPEC 4A.7), and compact virtualized view. |
+| **I** | **Multi-Tier Organization Hierarchy** | ✅ | 5-tier strict ranking (`ADMIN` → `SITE_ADMIN` → `GROUP_VENDOR` → `SUB_VENDOR` → `DEPLOYMENT_ASSOCIATE`). Unbounded `SUB_VENDOR` depth. Vertical tree, horizontal tree (strictly orthogonal connectors), and compact virtualized view. |
 | **II** | **Profile Movement & Role Management** | ✅ | Searchable combobox parent selector, real-time cycle prevention (`wouldCreateCycle`), atomic reparenting, optimistic updates with toast Undo, dynamic descendant count warning banners, role modification with parent-compatibility guards. |
 | **III** | **Permissions & Delegated Authority** | ✅ | 6 core permissions matrix, ancestor permission intersection (`Effective = Granted ∩ ParentEffective`), descendant-scoped delegation, "Acting on behalf of" perspective mode with header banner and audit log attribution. |
 | **IV** | **Fleet & Driver Onboarding** | ✅ | Indian registration normalization (`DL01AB1234`), DL/phone validation, document upload with expiry date enforcement, auto-deactivated on-read operational status derivation (`isVehicleCompliant`), fuel types (Petrol, Diesel, CNG, EV, Hybrid). |
 | **IV.b** | **Document Compliance & Verification** | ✅ | Multi-document verification queue (Approve/Reject with $\ge 5$ char reason), expiration countdown buckets (Expired, $\le 7$d, 8–15d, 16–30d), header notification bell with live badge count and deep-linking. |
-| **V** | **Super Vendor Dashboard & Overrides** | ✅ | High-level KPI metric cards, Fleet Operational donut chart, Direct Sub-Vendors risk table, live simulated telemetry streaming mode, Section 8.4 seniority-gated vehicle block/unblock and vendor suspension overrides. |
+| **V** | **Super Vendor Dashboard & Overrides** | ✅ | High-level KPI metric cards, Fleet Operational donut chart, Direct Sub-Vendors risk table, live simulated telemetry streaming mode, seniority-gated vehicle block/unblock and vendor suspension overrides. |
 | **V.b** | **Immutable Audit Log** | ✅ | Comprehensive audit trail capturing actor, action, timestamp, target, before/after diffs, and acting-on-behalf delegation attribution with cursor pagination and role filters. |
 | **Shell**| **Accessibility, Views & Dev Diagnostics** | ✅ | Global `?` keyboard shortcuts modal, `prefers-reduced-motion` animation suppression, Route code-splitting with `React.lazy`, API latency slider (0–1500ms), 15% flaky network preset, and 5,000-vendor stress test. |
 
@@ -207,11 +207,11 @@ If migrating this frontend from the current mock client to a distributed microse
 ---
 
 ## 10. AI Usage Disclosure & Engineering Discipline
-
-This codebase was developed in pair-programming collaboration with an advanced AI coding assistant using a rigorous "lazy senior developer" discipline (`ponytail.md`):
+ 
+This codebase was developed in pair-programming collaboration with an advanced AI coding assistant using a rigorous "lazy senior developer" engineering discipline:
 - **Discipline Rungs**: Stop at the first rung that holds: reuse existing helpers, standard libraries, and native platform features before writing new code.
 - **Strict Verification**: Every single line of code was verified against TypeScript strict mode, ESLint (`--max-warnings 0`), and 18 test suites containing 192 unit and component tests.
-- **Zero-Unrequested Features**: Strict adherence to specifications (e.g. dropping unrequested horizontal sibling hopping to preserve pure Left = collapse, Right = expand semantics).
+- **Zero-Unrequested Features**: Strict adherence to system requirements (e.g. maintaining pure Left = collapse, Right = expand keyboard tree navigation semantics).
 
 ---
 

@@ -190,7 +190,7 @@ export const HorizontalTreeView: React.FC<HorizontalTreeViewProps> = ({
     switch (e.key) {
       case 'ArrowRight': {
         e.preventDefault();
-        // SPEC: Right = expand
+        // Right = expand
         if (hasChildren && !isExpanded) {
           toggleExpanded(vendorId);
         }
@@ -198,7 +198,7 @@ export const HorizontalTreeView: React.FC<HorizontalTreeViewProps> = ({
       }
       case 'ArrowLeft': {
         e.preventDefault();
-        // SPEC: Left = collapse
+        // Left = collapse
         if (hasChildren && isExpanded) {
           toggleExpanded(vendorId);
         }

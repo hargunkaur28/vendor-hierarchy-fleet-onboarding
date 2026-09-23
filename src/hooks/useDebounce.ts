@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 /**
  * Custom hook to debounce any fast-changing value (e.g. search input).
  * @param value The value to debounce
- * @param delayMs The debounce delay in milliseconds (default 250ms per SPEC)
+ * @param delayMs The debounce delay in milliseconds (default 250ms)
  * @returns The debounced value
  */
 export function useDebounce<T>(value: T, delayMs: number = 250): T {
