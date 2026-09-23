@@ -4,6 +4,7 @@ import { AppError } from './errors';
 import { isRoleAllowedUnder } from '@/config/roles';
 import { wouldCreateCycle, buildChildrenIndex } from '@/lib/tree';
 import { authorize, canGrant } from '@/lib/permissions';
+import { canActorOverrideOrReactivate } from '@/lib/seniority';
 
 export interface MoveVendorParams {
   vendorId: string;
@@ -303,6 +304,14 @@ export const vendorsApi = {
         delegations,
       );
       if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
+
+      // Section 8.4 seniority check: only original suspender or more senior ancestor can reactivate
+      if (vendor.suspendedBy) {
+        const seniority = canActorOverrideOrReactivate(actorId, vendor.suspendedBy.vendorId, db.vendors);
+        if (!seniority.allowed) {
+          throw new AppError('PERMISSION_DENIED', seniority.reason ?? 'Insufficient seniority to reactivate vendor.');
+        }
+      }
 
       vendor.status = 'ACTIVE';
       delete vendor.suspendedBy;

@@ -231,14 +231,14 @@ export const DocumentsPage: React.FC = () => {
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden min-w-0">
             {filteredDocuments.length === 0 ? (
               <div className="p-12 text-center text-slate-400 text-xs">
                 No compliance documents match your filters.
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse" aria-label="Documents Roster">
+                <table className="w-full text-left border-collapse min-w-[800px]" aria-label="Documents Roster">
                   <thead>
                     <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/75">
                       <th className="py-3 px-4">Entity</th>

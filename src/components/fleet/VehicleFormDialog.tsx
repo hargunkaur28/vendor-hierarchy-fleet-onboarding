@@ -67,6 +67,15 @@ export const VehicleFormDialog: React.FC<VehicleFormDialogProps> = ({
     DL: null,
   });
 
+  // Track expiry-only changes for existing docs (no new file attached)
+  const [expiryChanges, setExpiryChanges] = useState<Record<DocType, string | null>>({
+    RC: null,
+    PERMIT: null,
+    PUC: null,
+    INSURANCE: null,
+    DL: null,
+  });
+
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -93,6 +102,15 @@ export const VehicleFormDialog: React.FC<VehicleFormDialogProps> = ({
     data: { fileName: string; fileSize: number; mimeType: string; expiryDate: string },
   ) => {
     setStagedDocs((prev) => ({ ...prev, [docType]: data }));
+    // Clear expiry-only change since full doc replaces it
+    setExpiryChanges((prev) => ({ ...prev, [docType]: null }));
+  };
+
+  const handleExpiryChange = (docType: DocType, expiryDate: string) => {
+    // Only track if there's no new file staged (pure expiry update on existing doc)
+    if (!stagedDocs[docType]) {
+      setExpiryChanges((prev) => ({ ...prev, [docType]: expiryDate }));
+    }
   };
 
   const onSubmit = async (data: VehicleFormData) => {
@@ -121,6 +139,21 @@ export const VehicleFormDialog: React.FC<VehicleFormDialogProps> = ({
               mimeType: staged.mimeType,
               expiryDate: staged.expiryDate,
             });
+          } else {
+            // Handle expiry-only change on existing docs
+            const newExpiry = expiryChanges[type];
+            const existingDoc = editingVehicle.documents.find((d) => d.type === type);
+            if (newExpiry && existingDoc) {
+              await uploadDocument({
+                entityType: 'VEHICLE',
+                entityId: editingVehicle.id,
+                type,
+                fileName: existingDoc.fileName,
+                fileSize: existingDoc.fileSize,
+                mimeType: existingDoc.mimeType,
+                expiryDate: newExpiry,
+              });
+            }
           }
         }
 
@@ -346,7 +379,7 @@ export const VehicleFormDialog: React.FC<VehicleFormDialogProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-3">
               {REQUIRED_VEHICLE_DOCS.map((docType) => {
                 const existingDoc = editingVehicle?.documents.find((d) => d.type === docType);
                 return (
@@ -357,6 +390,7 @@ export const VehicleFormDialog: React.FC<VehicleFormDialogProps> = ({
                     initialExpiry={existingDoc?.expiryDate?.slice(0, 10) || ''}
                     initialFileName={existingDoc?.fileName || ''}
                     onUploadSuccess={(data) => handleDocumentSuccess(docType, data)}
+                    onExpiryChange={(expiry) => handleExpiryChange(docType, expiry)}
                     disabled={isSubmitting}
                   />
                 );

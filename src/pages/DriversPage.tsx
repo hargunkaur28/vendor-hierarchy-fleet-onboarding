@@ -183,7 +183,7 @@ export const DriversPage: React.FC = () => {
       </div>
 
       {/* Drivers Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden min-w-0">
         {filteredDrivers.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto mb-3">
@@ -198,7 +198,7 @@ export const DriversPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse" aria-label="Drivers Table">
+            <table className="w-full text-left border-collapse min-w-[800px]" aria-label="Drivers Table">
               <thead>
                 <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/75">
                   <th className="py-3 px-4">Driver</th>

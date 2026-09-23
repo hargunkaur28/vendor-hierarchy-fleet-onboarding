@@ -153,7 +153,7 @@ export const VerificationQueue: React.FC = () => {
       )}
 
       {/* Main Queue Card */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden min-w-0">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
@@ -185,7 +185,7 @@ export const VerificationQueue: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse" aria-label="Pending Document Verification Queue">
+            <table className="w-full text-left border-collapse min-w-[800px]" aria-label="Pending Document Verification Queue">
               <thead>
                 <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/75">
                   <th className="py-3 px-4">Entity</th>

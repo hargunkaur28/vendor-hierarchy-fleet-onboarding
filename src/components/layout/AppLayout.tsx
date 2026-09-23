@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { UserCheck } from 'lucide-react';
+import { UserCheck, ShieldAlert } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { PERMISSION_CONFIG } from '@/config/permissions';
+import { getAncestors } from '@/lib/tree';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
@@ -23,6 +24,16 @@ export const AppLayout: React.FC = () => {
       )
     : null;
   const delegator = actingOnBehalfOf ? vendorsById[actingOnBehalfOf] : null;
+
+  // Check if current viewed vendor or any ancestor is suspended (Spec Section 8.4 & Section 15)
+  const currentVendor = vendorsById[currentUserId];
+  let suspendedAncestor: (typeof currentVendor) | null = null;
+  if (currentVendor?.status === 'SUSPENDED') {
+    suspendedAncestor = currentVendor;
+  } else if (currentVendor) {
+    const ancestors = getAncestors(currentUserId, vendorsById);
+    suspendedAncestor = ancestors.find((a) => a.status === 'SUSPENDED') || null;
+  }
 
   // Map route to page title
   const getPageTitle = () => {
@@ -111,7 +122,32 @@ export const AppLayout: React.FC = () => {
           </div>
         )}
 
-        <main className="flex-1 min-h-0 flex flex-col overflow-hidden bg-slate-50/50">
+        {/* Suspended Account Banner (Spec Section 8.4 / Section 15 ACCOUNT_SUSPENDED) */}
+        {suspendedAncestor && (
+          <div className="bg-rose-50 border-b border-rose-200 px-6 py-2 flex items-center justify-between gap-3 text-xs text-rose-900">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>
+                <strong>Account Suspended:</strong>{' '}
+                {suspendedAncestor.id === currentUserId
+                  ? `This account was suspended${
+                      suspendedAncestor.suspendedBy
+                        ? ` by ${vendorsById[suspendedAncestor.suspendedBy.vendorId]?.name ?? 'a supervisor'}. Reason: "${suspendedAncestor.suspendedBy.reason}"`
+                        : '.'
+                    }`
+                  : `An ancestor account (${suspendedAncestor.name}) is suspended. All operational capabilities across this subtree are frozen.`}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <main
+          className={`flex-1 min-h-0 bg-slate-50/50 ${
+            location.pathname === '/team' || location.pathname === '/'
+              ? 'flex flex-col overflow-hidden'
+              : 'overflow-y-auto p-6'
+          }`}
+        >
           <Outlet />
         </main>
       </div>

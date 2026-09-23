@@ -13,6 +13,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { selectSubtreeVendorIds } from '@/store/selectors';
 import { authorize } from '@/lib/permissions';
 import { isVehicleCompliant, getEffectiveVehicleStatus } from '@/lib/compliance';
+import { canActorOverrideOrReactivate } from '@/lib/seniority';
 import { DocumentStatusChip } from '@/components/documents/DocumentStatusChip';
 import { DocumentHealthIcons } from '@/components/documents/DocumentHealthIcons';
 import { VehicleFormDialog } from '@/components/fleet/VehicleFormDialog';
@@ -93,7 +94,7 @@ export const VehiclesPage: React.FC = () => {
     }
 
     if (v.blocked) {
-      toast.error(`Vehicle is blocked: ${v.blocked.reason}`);
+      toast.error(`Vehicle is blocked: ${v.blocked.reason}. Unblock it first.`);
       return;
     }
 
@@ -101,7 +102,7 @@ export const VehiclesPage: React.FC = () => {
     if (v.status !== 'ACTIVE') {
       const { compliant, reasons } = isVehicleCompliant(v);
       if (!compliant) {
-        toast.error(`Cannot activate non-compliant vehicle: ${reasons.map((r) => r.detail).join(', ')}.`);
+        toast.error(`Cannot activate: ${reasons.map((r) => r.detail).join(', ')}. Upload valid documents first.`);
         return;
       }
     }
@@ -116,6 +117,14 @@ export const VehiclesPage: React.FC = () => {
   };
 
   const handleUnblock = async (v: Vehicle) => {
+    if (v.blocked?.byVendorId) {
+      const seniority = canActorOverrideOrReactivate(currentUserId, v.blocked.byVendorId, vendorsById);
+      if (!seniority.allowed) {
+        toast.error(seniority.reason ?? 'Insufficient seniority to unblock vehicle.');
+        return;
+      }
+    }
+
     try {
       await unblockVehicle(v.id);
       toast.success(`Vehicle "${v.regNo}" unblocked.`);
@@ -219,7 +228,7 @@ export const VehiclesPage: React.FC = () => {
       </div>
 
       {/* Vehicles Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden min-w-0">
         {filteredVehicles.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto mb-3">
@@ -234,7 +243,7 @@ export const VehiclesPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse" aria-label="Vehicles List">
+            <table className="w-full text-left border-collapse min-w-[900px]" aria-label="Vehicles List">
               <thead>
                 <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/75">
                   <th className="py-3 px-4">Registration No.</th>
@@ -253,14 +262,32 @@ export const VehiclesPage: React.FC = () => {
                   const driver = vehicle.assignedDriverId ? driversById[vehicle.assignedDriverId] : null;
                   const { compliant, reasons } = isVehicleCompliant(vehicle);
                   const effectiveStatus = getEffectiveVehicleStatus(vehicle);
-                  const canToggle = canOnboard && !vehicle.blocked && (vehicle.status === 'ACTIVE' || compliant);
 
-                  let toggleTooltip = 'Toggle Active status';
-                  if (!canOnboard) toggleTooltip = 'Requires ONBOARD_FLEET permission';
-                  else if (vehicle.blocked) toggleTooltip = `Vehicle is blocked: ${vehicle.blocked.reason}`;
-                  else if (!compliant && vehicle.status !== 'ACTIVE') {
-                    toggleTooltip = `Cannot activate non-compliant vehicle: ${reasons.map((r) => r.detail).join(', ')}`;
+                  // Toggle logic:
+                  // - Deactivating (ACTIVE → INACTIVE): always allowed if has permission and not blocked
+                  // - Activating (INACTIVE → ACTIVE): requires compliance
+                  // - Non-compliant vehicles can NEVER be active — force toggle off visually
+                  const isNonCompliantActive = !compliant && vehicle.status === 'ACTIVE';
+                  const canDeactivate = canOnboard && !vehicle.blocked && vehicle.status === 'ACTIVE';
+                  const canActivate = canOnboard && !vehicle.blocked && vehicle.status !== 'ACTIVE' && compliant;
+                  const canToggle = canDeactivate || canActivate;
+
+                  // Build specific tooltip reason per Section 15 error-handling
+                  let toggleTooltip = '';
+                  if (!canOnboard) {
+                    toggleTooltip = 'Requires ONBOARD_FLEET permission';
+                  } else if (vehicle.blocked) {
+                    toggleTooltip = `Vehicle is blocked: ${vehicle.blocked.reason}`;
+                  } else if (vehicle.status !== 'ACTIVE' && !compliant) {
+                    toggleTooltip = `Cannot activate: ${reasons.map((r) => r.detail).join(', ')}`;
+                  } else if (isNonCompliantActive) {
+                    toggleTooltip = `Non-compliant — auto-deactivated: ${reasons.map((r) => r.detail).join(', ')}`;
+                  } else {
+                    toggleTooltip = vehicle.status === 'ACTIVE' ? 'Click to deactivate' : 'Click to activate';
                   }
+
+                  // Visual state: non-compliant active vehicles show toggle as OFF
+                  const toggleChecked = vehicle.status === 'ACTIVE' && compliant;
 
                   return (
                     <tr key={vehicle.id} className="hover:bg-slate-50/70 transition-colors">
@@ -347,20 +374,20 @@ export const VehiclesPage: React.FC = () => {
                           <button
                             type="button"
                             role="switch"
-                            aria-checked={vehicle.status === 'ACTIVE'}
+                            aria-checked={toggleChecked}
                             disabled={!canToggle}
                             onClick={() => handleToggleStatus(vehicle)}
                             className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
                               !canToggle
                                 ? 'opacity-40 cursor-not-allowed bg-slate-300'
-                                : vehicle.status === 'ACTIVE'
+                                : toggleChecked
                                   ? 'bg-emerald-600 cursor-pointer'
                                   : 'bg-slate-300 hover:bg-slate-400 cursor-pointer'
                             }`}
                           >
                             <span
                               className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                                vehicle.status === 'ACTIVE' ? 'translate-x-4.5' : 'translate-x-1'
+                                toggleChecked ? 'translate-x-4.5' : 'translate-x-1'
                               }`}
                             />
                           </button>
@@ -388,16 +415,30 @@ export const VehiclesPage: React.FC = () => {
                             <UserCheck className="w-3.5 h-3.5" />
                           </button>
 
-                          {vehicle.blocked ? (
-                            <button
-                              type="button"
-                              onClick={() => handleUnblock(vehicle)}
-                              className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
-                              title="Unblock Vehicle"
-                            >
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                            </button>
-                          ) : (
+                          {vehicle.blocked ? (() => {
+                            const unblockSeniority = vehicle.blocked.byVendorId
+                              ? canActorOverrideOrReactivate(currentUserId, vehicle.blocked.byVendorId, vendorsById)
+                              : { allowed: true };
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => handleUnblock(vehicle)}
+                                disabled={!unblockSeniority.allowed}
+                                className={`p-1.5 rounded-md transition-colors ${
+                                  unblockSeniority.allowed
+                                    ? 'text-emerald-600 hover:bg-emerald-50 cursor-pointer'
+                                    : 'text-slate-300 cursor-not-allowed opacity-50'
+                                }`}
+                                title={
+                                  unblockSeniority.allowed
+                                    ? 'Unblock Vehicle (Seniority Confirmed)'
+                                    : unblockSeniority.reason ?? 'Insufficient seniority to unblock'
+                                }
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                              </button>
+                            );
+                          })() : (
                             <button
                               type="button"
                               onClick={() => setBlockingVehicle(vehicle)}

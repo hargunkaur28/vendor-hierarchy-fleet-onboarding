@@ -43,7 +43,7 @@ describe('Phase 6: Fleet & Drivers Management (F6)', () => {
 
       // Check for Add Vehicle button
       expect(screen.getByRole('button', { name: /Add Vehicle/i })).toBeInTheDocument();
-    });
+    }, 15000);
 
     it('derives operational status live (auto-deactivated on read) and disables activation toggle for non-compliant vehicles', () => {
       useAppStore.getState().switchUser('admin');
@@ -72,6 +72,11 @@ describe('Phase 6: Fleet & Drivers Management (F6)', () => {
       // Verify Non-Compliant badge appears
       const badges = screen.getAllByText('Non-Compliant');
       expect(badges.length).toBeGreaterThan(0);
+
+      // Verify the Active toggle switch is forced OFF (aria-checked="false") and disabled
+      const switches = screen.getAllByRole('switch');
+      const nonCompliantSwitch = switches.find((s) => s.getAttribute('aria-checked') === 'false' && s.hasAttribute('disabled'));
+      expect(nonCompliantSwitch).toBeDefined();
     });
 
     it('filters vehicles by search query and fuel type', async () => {

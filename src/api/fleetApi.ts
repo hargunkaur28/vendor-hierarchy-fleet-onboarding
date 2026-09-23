@@ -4,6 +4,7 @@ import { AppError } from './errors';
 import { normalizeRegNo, normalizeLicenseNo } from '@/lib/validators';
 import { isVehicleCompliant, isDriverCompliant } from '@/lib/compliance';
 import { authorize } from '@/lib/permissions';
+import { canActorOverrideOrReactivate } from '@/lib/seniority';
 
 export interface CreateVehicleParams {
   vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'documents'>;
@@ -238,6 +239,14 @@ export const fleetApi = {
         delegations,
       );
       if (!auth.allowed) throw new AppError('PERMISSION_DENIED', auth.message);
+
+      // Section 8.4 seniority check: only original blocker or more senior ancestor can unblock
+      if (vehicle.blocked?.byVendorId) {
+        const seniority = canActorOverrideOrReactivate(actorId, vehicle.blocked.byVendorId, db.vendors);
+        if (!seniority.allowed) {
+          throw new AppError('PERMISSION_DENIED', seniority.reason ?? 'Insufficient seniority to unblock vehicle.');
+        }
+      }
 
       delete vehicle.blocked;
       vehicle.updatedAt = new Date().toISOString();

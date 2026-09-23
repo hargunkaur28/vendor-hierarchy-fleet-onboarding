@@ -105,3 +105,13 @@ FuelType strictly adheres to the domain union `'PETROL' | 'DIESEL' | 'CNG' | 'EV
 ### A26: Acting on Behalf Delegation Attribution
 When an actor is in "Acting on Behalf" mode (`actingOnBehalfOf !== null`), UI headers and cards in delegation and fleet views attribute actions to the delegator's identity, and audit logs record the acting attribution.
 
+### A27: Vehicle Active Toggle Clamping & Document Expiry Persistence
+1. **Toggle Clamping:** A non-compliant vehicle (missing, expired, or rejected required documents) can never show the Active toggle as ON. The toggle visual is strictly derived as `vehicle.status === 'ACTIVE' && isVehicleCompliant(vehicle).compliant`. If non-compliant, it renders as deactivated (OFF) and disabled for reactivation, with a specific tooltip detailing each missing or expired document.
+2. **Reactivation Feedback:** Clicking the toggle or attempting reactivation on an inactive or non-compliant vehicle surfaces the exact Section 15 failure reason in a toast notification and hover tooltip (e.g. "Cannot activate: RC expired on 2024-01-01. Upload valid documents first.").
+3. **Document Expiry Persistence:** When editing a vehicle or driver, changing a document's expiry date without uploading a new binary file now persists the updated expiry date to the store immediately on submit, triggering live compliance re-derivation across all views.
+
+### A28: Override Seniority Enforcement (Section 8.4) & Vehicle Block Status
+1. **Vehicle Block/Unblock Status:** `VehicleBlockDialog.tsx` created in Phase 6 provides the UI dialog for capturing block reasons. In Phase 7, the F9 requirement is finalized by adding the Section 8.4 Seniority Enforcement check to both `fleetApi.unblockVehicle` and UI unblock buttons: unblocking is strictly restricted to the original blocker or a more senior ancestor (`ROLE_CONFIG[actor.role].rank < ROLE_CONFIG[blocker.role].rank` or ancestor of blocker).
+2. **Vendor Suspension & Reactivation:** F9 covers both Suspend and Reactivate. Suspending requires a reason ($\ge 5$ chars) and renders the subtree non-operational via ancestor check. Reactivation is strictly restricted to the original suspender or a more senior ancestor; less senior peers cannot undo a senior override.
+
+

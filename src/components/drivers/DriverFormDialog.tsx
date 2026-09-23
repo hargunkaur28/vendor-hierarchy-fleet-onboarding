@@ -44,6 +44,7 @@ export const DriverFormDialog: React.FC<DriverFormDialogProps> = ({
     mimeType: string;
     expiryDate: string;
   } | null>(null);
+  const [expiryChange, setExpiryChange] = useState<string | null>(null);
 
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -63,6 +64,8 @@ export const DriverFormDialog: React.FC<DriverFormDialogProps> = ({
     },
   });
 
+  const existingDl = editingDriver?.documents.find((d) => d.type === 'DL');
+
   if (!isOpen) return null;
 
   const handleDlSuccess = (data: {
@@ -72,6 +75,13 @@ export const DriverFormDialog: React.FC<DriverFormDialogProps> = ({
     expiryDate: string;
   }) => {
     setStagedDl(data);
+    setExpiryChange(null);
+  };
+
+  const handleExpiryChange = (date: string) => {
+    if (!stagedDl) {
+      setExpiryChange(date);
+    }
   };
 
   const onSubmit = async (data: DriverFormData) => {
@@ -97,6 +107,17 @@ export const DriverFormDialog: React.FC<DriverFormDialogProps> = ({
             fileSize: stagedDl.fileSize,
             mimeType: stagedDl.mimeType,
             expiryDate: stagedDl.expiryDate,
+          });
+        } else if (expiryChange && existingDl) {
+          // Expiry-only update on existing DL
+          await uploadDocument({
+            entityType: 'DRIVER',
+            entityId: editingDriver.id,
+            type: 'DL',
+            fileName: existingDl.fileName,
+            fileSize: existingDl.fileSize,
+            mimeType: existingDl.mimeType,
+            expiryDate: expiryChange,
           });
         }
 
@@ -138,8 +159,6 @@ export const DriverFormDialog: React.FC<DriverFormDialogProps> = ({
       setIsSubmitting(false);
     }
   };
-
-  const existingDl = editingDriver?.documents.find((d) => d.type === 'DL');
 
   return (
     <div
@@ -291,6 +310,7 @@ export const DriverFormDialog: React.FC<DriverFormDialogProps> = ({
               initialExpiry={existingDl?.expiryDate?.slice(0, 10) || ''}
               initialFileName={existingDl?.fileName || ''}
               onUploadSuccess={handleDlSuccess}
+              onExpiryChange={handleExpiryChange}
               disabled={isSubmitting}
             />
           </div>

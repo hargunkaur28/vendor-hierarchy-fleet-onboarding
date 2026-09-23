@@ -15,6 +15,8 @@ interface DocumentUploaderProps {
     mimeType: string;
     expiryDate: string;
   }) => void;
+  /** Fires when the expiry date is changed on an existing document (no new file attached) */
+  onExpiryChange?: (expiryDate: string) => void;
   disabled?: boolean;
 }
 
@@ -32,6 +34,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
   initialExpiry = '',
   initialFileName = '',
   onUploadSuccess,
+  onExpiryChange,
   disabled = false,
 }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -139,13 +142,13 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
   return (
     <div className="p-3.5 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
       {/* Header with Type label and Expiry Input */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
+          <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 shrink-0">
             <FileText className="w-4 h-4" />
           </div>
-          <div>
-            <h4 className="text-xs font-bold text-slate-800 tracking-tight">
+          <div className="min-w-0">
+            <h4 className="text-xs font-bold text-slate-800 tracking-tight truncate">
               {label || DEFAULT_DOC_LABELS[docType] || docType}
             </h4>
             <p className="text-[10px] text-slate-400">PDF, JPG or PNG (max 5 MB)</p>
@@ -162,11 +165,16 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
             type="date"
             value={expiryDate}
             onChange={(e) => {
-              setExpiryDate(e.target.value);
+              const newDate = e.target.value;
+              setExpiryDate(newDate);
               setError(null);
+              // Notify parent of expiry change for existing documents
+              if (onExpiryChange && initialFileName && newDate) {
+                onExpiryChange(newDate);
+              }
             }}
             disabled={disabled || isUploading}
-            className="px-2 py-1 text-xs bg-white border border-slate-200 rounded-md focus:outline-none focus:border-indigo-500 text-slate-800 font-medium"
+            className="flex-1 min-w-0 px-2 py-1 text-xs bg-white border border-slate-200 rounded-md focus:outline-none focus:border-indigo-500 text-slate-800 font-medium"
             required
           />
         </div>
